@@ -1,0 +1,41 @@
+.globalpayments iframe {
+    min-height: 3.6rem;
+    width: 100%;
+}
+
+div[id^="GlobalPayments-overlay-"] {
+    z-index: 1001 !important;
+}
+
+.globalpayments-validation-error, .globalpayments-sandbox-warning {
+    margin-bottom:1em;
+    background-color:#e2401c;
+    margin-left:0;
+    border-radius:4px;
+    color:#fff;
+    clear:both;
+    border-left:.6180469716em solid rgba(0,0,0,.15);
+    padding:6px 12px;
+    position:relative;
+    list-style:none outside;
+    display:block;
+    width:100%;
+    font-size:14px;
+}
+
+.globalpayments-payment-form {
+    margin: 1rem 0;
+}
+
+.enable-vault {
+    margin-bottom: 15px;
+}
+
+.enable-vault-label {
+    margin-left: 1.5rem;
+    margin-bottom: 0;
+}
+
+.cform {
+    min-width: 330px;
+}

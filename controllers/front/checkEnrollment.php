@@ -1,0 +1,79 @@
+<?php
+/**
+ * NOTICE OF LICENSE
+ *
+ * This file is licenced under the Software License Agreement.
+ * With the purchase or the installation of the software in your application
+ * you accept the licence agreement.
+ *
+ * You must not modify, adapt or create derivative works of this source code
+ *
+ * @author    GlobalPayments
+ * @copyright Since 2021 GlobalPayments
+ * @license   LICENSE
+ */
+
+use GlobalPayments\PaymentGatewayProvider\Data\Order as OrderModel;
+use GlobalPayments\PaymentGatewayProvider\Gateways\GatewayId;
+use GlobalPayments\PaymentGatewayProvider\Requests\ThreeDSecure\CheckEnrollmentRequest;
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
+class GlobalPaymentsCheckEnrollmentModuleFrontController extends ModuleFrontController
+{
+    /**
+     * @var OrderModel
+     */
+    private $order;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->order = new OrderModel();
+    }
+
+    public function initContent()
+    {
+        parent::initContent();
+
+        if ('POST' !== $_SERVER['REQUEST_METHOD'] || 'application/json' !== $_SERVER['CONTENT_TYPE']) {
+            return;
+        }
+
+        $gateway = $this->module->getActiveGateway();
+
+        if (!$gateway || $gateway->id !== GatewayId::GP_UCP) {
+            return;
+        }
+
+        $data = json_decode(Tools::file_get_contents('php://input'));
+
+        $amount = $data->amount ?? null;
+        $cardData = isset($data->tokenResponse) ? json_decode($data->tokenResponse) : null;
+        $currency = $data->currency ?? null;
+        $muTokenId = $data->tokenId ?? null;
+
+        $order = $this->order->generateOrder([
+            'amount' => $amount,
+            'cardData' => $cardData,
+            'currency' => $currency,
+            'multiUseTokenId' => $muTokenId,
+        ]);
+
+        try {
+            $response = $gateway->processThreeDSecureCheckEnrollment($order);
+        } catch (Exception $e) {
+            $response = [
+                'error' => true,
+                'message' => $e->getMessage(),
+                'enrolled' => CheckEnrollmentRequest::NO_RESPONSE,
+            ];
+        }
+
+        echo json_encode($response);
+        exit;
+    }
+}

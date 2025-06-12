@@ -1,0 +1,15 @@
+globalpayments_get_transaction_details:
+  path: globalpayments/getTransactionDetails
+  methods: [ POST ]
+  defaults:
+    _controller: 'GlobalPayments\PaymentGatewayProvider\Controllers\Admin\TransactionController::getTransactionDetailsAction'
+    _legacy_controller: GlobalPaymentsGetTransactionDetails
+    _legacy_link: GlobalPaymentsGetTransactionDetails
+
+globalpayments_credentials_check:
+  path: globalpayments/credentialsCheck
+  methods: [ POST ]
+  defaults:
+    _controller: 'GlobalPayments\PaymentGatewayProvider\Controllers\Admin\ConfigurationController::credentialsCheckAction'
+    _legacy_controller: GlobalPaymentsCredentialsCheck
+    _legacy_link: GlobalPaymentsCredentialsCheck

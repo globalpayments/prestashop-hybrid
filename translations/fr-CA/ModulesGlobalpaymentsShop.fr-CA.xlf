@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="admin315ntjt5b5zndtxd6a3" source-language="fr-CA" target-language="fr-CA" datatype="plaintext">
+    <body>
+      <trans-unit id="5c3d49069849e0467562e52e3f9ab8a5">
+        <source>Please accept the terms of service</source>
+        <target>Veuillez accepter les conditions de service</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="d1a0721493e82b1a2979de5137ac5872">
+        <source>Please try again with another card.</source>
+        <target>Veuillez réessayer avec une autre carte.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="42afbb70c61466988c9a22fc779d3f6e">
+        <source>We're not able to process this payment. Please refresh the page and try again.</source>
+        <target>Nous ne pouvons pas traiter ce paiement. Veuillez réactualiser cette page et réessayer.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="acd2ab3c90c8fbb978fd17085b6f0422">
+        <source>Something went wrong while doing 3DS processing.</source>
+        <target>Une erreur est survenue lors du processus 3DS.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="8dffa6260715e0be982a2312b2f10f3e">
+        <source>Card Holder Name</source>
+        <target>Nom du détenteur de carte</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="a2ddf43663cb26714030fd51701b9a6f">
+        <source>Please enter a valid Card Holder Name</source>
+        <target>Veuillez entrer un nom de détenteur de carte valide</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="5e038f03415db5461c13d380469436cb">
+        <source>Credit Card Number</source>
+        <target>Numéro de carte de crédit</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="df2e803a57eac32862fe4eca09613e87">
+        <source>Please enter a valid Credit Card Number</source>
+        <target>Veuillez entrer un numéro de carte de crédit valide</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="2a8f83ed2fc18320318727fe3300955a">
+        <source>Credit Card Expiration Date</source>
+        <target>Date d'expiration de la carte de crédit</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="45b2fb524150421f77b52eadbcb278f8">
+        <source>Please enter a valid Credit Card Expiration Date</source>
+        <target>Veuillez entrer une date d'expiration de carte de crédit valide</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="169eacfc270a00a1bb99e0ed408865e9">
+        <source>Credit Card Security Code</source>
+        <target>Code de sécurité de la carte de crédit</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="3a2b9259983239aab8717dd9aa089714">
+        <source>Please enter a valid Credit Card Security Code</source>
+        <target>Veuillez entrer un code de sécurité de carte de crédit valide</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="8b8983c714bf431afecfd9501ee9a6ae">
+        <source>%title% - %type% ending in %last4% (%month%/%year%)</source>
+        <target>%title% - %type% se terminant par %last4% (%month%/%year%)</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b01d780bf6ae46e1f4ced42cb69bf415">
+        <source>We're unable to take your payment through Apple Pay. Please try again or use an alternative payment method.</source>
+        <target>Nous ne pouvons pas traiter ce paiement avec Apple Pay. Veuillez réessayer ou utiliser une autre méthode de paiement.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="78ec8b5749fdd47bf8aef6f5194c5bf1">
+        <source>3DS Authentication failed. Please try again.</source>
+        <target>Échec de l'authentification 3DS. Veuillez réessayer.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="af1eb2f10c230513cbb09a085122b8c5">
+        <source>Please check the Shipping address. </source>
+        <target>Veuillez vérifier l'adresse de livraison.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="2bba13eb3d8431561590c8177f3dd38d">
+        <source>Please check the Billing address. </source>
+        <target>Veuillez vérifier l'adresse de facturation.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="920838661c04a505fe7d91fb9193e006">
+        <source>Zip/Postal Code is mandatory.</source>
+        <target>Le code postal est obligatoire.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="1736c2ee0dea7755c52e2a97652c5e53">
+        <source>Telephone is mandatory.</source>
+        <target>Le téléphone est obligatoire.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="06bbbb13daf7ba899f758bdaa758d551">
+        <source>My Cards - Global Payments</source>
+        <target>Mes Cartes - Global Payments</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="e39fae3127f64235493cd77f6d621a4a">
+        <source>Your payment was unsuccessful. Please try again or use a different payment method.</source>
+        <target>Votre paiement a échoué. Veuillez réessayer ou utiliser une autre méthode de paiement.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="dc173c4fd6b4d7208d18d6b46a1f7fa4">
+        <source>An error occurred while processing the payment. Please try again or use a different payment method.</source>
+        <target>Une erreur est survenue lors du traitement du paiement. Veuillez réessayer ou utiliser une autre méthode de paiement.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="5238bd0d26ee4c221badd6e6c6475412">
+        <source>Your order</source>
+        <target>Votre commande</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="442a8d2a3cc8a5be034ae5806f113a6b">
+        <source>Not enough data to perform 3DS. Unable to retrieve token.</source>
+        <target>Pas assez de données pour exécuter 3DS. Impossible de récupérer le jeton.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="0ab8c94bab610f28fd3408c167fb9831">
+        <source>Thank you. Your order has been received, but we have encountered an issue when redirecting back.
+                Please contact us for assistance.</source>
+        <target>Merci. Votre commande a été reçue, mais un problème est survenu lors du réacheminement. Veuillez nous contacter pour de l'assistance.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="c968cfe4d1500126104a9929873868ec">
+        <source>Bank Payment Logo</source>
+        <target>Bank Payment Logo</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="dd70e4321c43efe31c4eb8d07e281f1d">
+        <source>This page is currently in sandbox/test mode. Do not use real/active card numbers.</source>
+        <target>Cette page est actuellement en mode test. Ne pas utiliser de numéros de carte réels/actifs.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="24504aafb96ee88621fb12c6c0cb5832">
+        <source>Save for later use</source>
+        <target>Sauvegarder pour usage ultérieur</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="a1fa27779242b4902f7ae3bdd5c6d508">
+        <source>Type</source>
+        <target>Type</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="a44217022190f5734b2f72ba1e4f8a79">
+        <source>Card number</source>
+        <target>Numéro de carte</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b07cc2801693b2e722906a3db3d9c447">
+        <source>Validity</source>
+        <target>Validité</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f2a6c498fb90ee345d997f888fce3b18">
+        <source>Delete</source>
+        <target>Supprimer</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="eb0b8a8579d442a4340ff328116ba83e">
+        <source>You haven't registered a card yet.</source>
+        <target>Vous n'avez pas encore enregistré de carte.</target>
+        <note>Line: </note>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

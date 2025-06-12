@@ -1,0 +1,374 @@
+<?php
+/**
+ * NOTICE OF LICENSE
+ *
+ * This file is licenced under the Software License Agreement.
+ * With the purchase or the installation of the software in your application
+ * you accept the licence agreement.
+ *
+ * You must not modify, adapt or create derivative works of this source code
+ *
+ * @author    GlobalPayments
+ * @copyright Since 2021 GlobalPayments
+ * @license   LICENSE
+ */
+
+namespace GlobalPayments\PaymentGatewayProvider\Platform;
+
+use GlobalPayments\PaymentGatewayProvider\Data\Order as OrderModel;
+use GlobalPayments\PaymentGatewayProvider\Gateways\GpApiGateway;
+use GlobalPayments\PaymentGatewayProvider\Platform\Helper\OrderStateHelper;
+use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
+use PrestaShopBundle\Translation\TranslatorComponent as Translator;
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
+class TransactionManagement
+{
+    /**
+     * @var \GlobalPayments
+     */
+    protected $module;
+
+    /**
+     * @var \Context|null
+     */
+    protected $context;
+
+    /**
+     * @var OrderModel
+     */
+    protected $order;
+
+    /**
+     * @var OrderStateHelper
+     */
+    protected $orderStateHelper;
+
+    /**
+     * @var TransactionHistory
+     */
+    protected $transactionHistory;
+
+    /**
+     * @var Translator
+     */
+    protected $translator;
+
+    /**
+     * TransactionManagement constructor.
+     *
+     * @param \GlobalPayments $module
+     */
+    public function __construct(
+        \GlobalPayments $module
+    ) {
+        $this->module = $module;
+
+        $this->context = $module->getContext();
+        $this->order = new OrderModel();
+        $this->orderStateHelper = new OrderStateHelper();
+        $this->transactionHistory = new TransactionHistory();
+        $this->translator = $this->module->getTranslator();
+    }
+
+    /**
+     * States whether the Capture button should be displayed.
+     *
+     * @param \Order $psOrder
+     *
+     * @return bool
+     *
+     * @throws \PrestaShopDatabaseException
+     */
+    public function canCapture($psOrder)
+    {
+        $history = $psOrder->getHistory(
+            $this->context->language->id,
+            \Configuration::get(OrderStateInstaller::CAPTURE_WAITING)
+        );
+
+        return !empty($history)
+            && $this->getCapturedValue($psOrder->id) === 0.00
+            && !$this->waitingForPayment($psOrder);
+    }
+
+    /**
+     * Check if a capture was made succseefully.
+     *
+     * @param string $responseCode
+     * @param string $responseMessage
+     *
+     * @return bool
+     */
+    public function checkSuccessfullCapture($responseCode, $responseMessage)
+    {
+        if ('00' === $responseCode && 'Success' === $responseMessage
+            || 'SUCCESS' === $responseCode && 'CAPTURED' === $responseMessage
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Create an authorization transaction for a specific order.
+     *
+     * @param int $orderId
+     * @param float $amount
+     * @param string $currency
+     * @param string $transactionId
+     *
+     * @return void
+     *
+     * @throws \PrestaShopDatabaseException
+     */
+    public function createAuthorizationTransaction($orderId, $amount, $currency, $transactionId)
+    {
+        $this->createTransaction(
+            $orderId,
+            $amount,
+            $currency,
+            $transactionId,
+            TransactionType::AUTHORIZE
+        );
+    }
+
+    public function createSaleTransaction($orderId, $amount, $currency, $transactionId)
+    {
+        $this->createTransaction(
+            $orderId,
+            $amount,
+            $currency,
+            $transactionId,
+            TransactionType::SALE
+        );
+    }
+
+    /**
+     * Create a transaction for a specific order.
+     *
+     * @param int $orderId
+     * @param float $amount
+     * @param string $currency
+     * @param string $transactionId
+     * @param string $transactionAction
+     * @param string $transactionType
+     * @param int $success
+     *
+     * @return void
+     *
+     * @throws \PrestaShopDatabaseException
+     */
+    public function createTransaction($orderId, $amount, $currency, $transactionId, $transactionType, $success = 1)
+    {
+        $this->transactionHistory->saveResult(
+            $orderId,
+            $transactionType,
+            $amount,
+            $currency,
+            $transactionId,
+            $success
+        );
+    }
+
+    /**
+     * Do a transaction in the Transaction Management Tab
+     *
+     * @param $psOrder
+     *
+     * @return void
+     *
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public function doTransaction($psOrder)
+    {
+        if (\Tools::getValue('globalpayments_transaction')) {
+            $request = \Tools::getValue('globalpayments_transaction');
+            $amount = \Tools::getIsset('globalpayments_amount') ?
+                (float) \Tools::getValue('globalpayments_amount') : 0.00;
+
+            switch ($request) {
+                case 'capture':
+                    $this->processCapture($psOrder, $amount);
+
+                    break;
+                default:
+                    break;
+            }
+
+            \Tools::redirectAdmin($_SERVER['REQUEST_URI']);
+            exit;
+        }
+    }
+
+    /**
+     * Get the amount that was already captured for an order.
+     *
+     * @param $orderId
+     *
+     * @return float
+     *
+     * @throws \PrestaShopDatabaseException
+     */
+    public function getCapturedValue($orderId)
+    {
+        $orderHistory = $this->transactionHistory->getHistory($orderId);
+        $orderAmount = 0.00;
+
+        foreach ($orderHistory as $orderHistoryItem) {
+            if ($orderHistoryItem['action'] === TransactionType::CAPTURE) {
+                $orderAmount += $orderHistoryItem['amount'];
+            }
+        }
+
+        return $orderAmount;
+    }
+
+    /**
+     * States whether the current order has a transaction id attached to it.
+     *
+     * @param \Order $psOrder
+     * @return bool
+     */
+    public function hasTxnId($psOrder)
+    {
+        $orderPayment = \OrderPayment::getByOrderReference($psOrder->reference)[0];
+
+        return !empty($orderPayment->transaction_id);
+    }
+
+    /**
+     * Execute the capture action.
+     *
+     * @param \Order $psOrder
+     * @param float $amount
+     *
+     * @return void
+     *
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public function processCapture($psOrder, $amount)
+    {
+        $orderPayment = \OrderPayment::getByOrderReference($psOrder->reference)[0];
+        $gateway = new GpApiGateway();
+        $currency = new \Currency($psOrder->id_currency);
+
+        $order = $this->order->generateOrder(
+            [
+                'amount' => $amount,
+                'currency' => $currency->iso_code,
+                'transactionId' => $orderPayment->transaction_id,
+            ]
+        );
+
+        try {
+            $request = $gateway->prepareRequest(TransactionType::CAPTURE, $order);
+            $response = $gateway->submitRequest($request);
+
+            if (!$this->checkSuccessfullCapture($response->responseCode, $response->responseMessage)) {
+                return;
+            }
+
+            $this->transactionHistory->saveResult(
+                (int) $psOrder->id,
+                TransactionType::CAPTURE,
+                $amount,
+                $currency->iso_code,
+                $response->transactionReference->transactionId,
+                1
+            );
+
+            $this->orderStateHelper->changeOrderState(
+                $psOrder->id,
+                $this->context->employee->id ?? '',
+                \Configuration::get('PS_OS_PAYMENT')
+            );
+        } catch (\Exception $e) {
+            $this->transactionHistory->saveResult(
+                (int) $psOrder->id,
+                TransactionType::CAPTURE,
+                0,
+                $currency->iso_code,
+                '',
+                0,
+                $e->getMessage()
+            );
+            \Tools::displayError($e->getMessage());
+        }
+    }
+
+    /**
+     * Execute the refund action.
+     *
+     * @param \Order $psOrder
+     * @param float $amount
+     *
+     * @return void
+     *
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    public function processRefund($psOrder, $amount)
+    {
+        $currency = new \Currency($psOrder->id_currency);
+        $orderId = (int) $psOrder->id;
+
+        if ($amount > 0.00) {
+            $orderPayment = \OrderPayment::getByOrderReference($psOrder->reference)[0];
+
+            $gateway = new GpApiGateway();
+
+            $order = $this->order->generateOrder(
+                [
+                    'amount' => $amount,
+                    'currency' => $currency->iso_code,
+                    'description' => '',
+                    'transactionId' => $orderPayment->transaction_id,
+                ]
+            );
+
+            try {
+                $response = $gateway->processRefund($order);
+
+                if ($response) {
+                    $this->transactionHistory->saveResult(
+                        $orderId,
+                        TransactionType::REFUND_REVERSE,
+                        $amount,
+                        $currency->iso_code,
+                        $response->transactionReference->transactionId,
+                        1
+                    );
+                }
+            } catch (\Exception $e) {
+                $this->transactionHistory->saveResult(
+                    $orderId,
+                    TransactionType::REFUND_REVERSE,
+                    $amount,
+                    $currency->iso_code,
+                    '',
+                    0,
+                    $e->getMessage(),
+                );
+                $this->context->controller->errors[] = \Tools::displayError($e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * States whether the order state is 'Waiting for GlobalPayments payment'.
+     *
+     * @param \Order $psOrder
+     * @return bool
+     */
+    public function waitingForPayment($psOrder)
+    {
+        return (int) $psOrder->getCurrentState() === (int) \Configuration::get(OrderStateInstaller::PAYMENT_WAITING);
+    }
+}

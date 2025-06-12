@@ -1,0 +1,17 @@
+#globalpayments_clicktopay {
+  max-width: 350px;
+}
+
+body#checkout section.checkout-step .payment-options .secure-payment-form button label {
+  display: block;
+  text-align: center;
+}
+
+body#checkout section.checkout-step .payment-options .secure-payment-form #ctp-wrapper .VerificationLabel label {
+  display: inline-block;
+}
+
+body#checkout section.checkout-step .payment-options .secure-payment-form #ctp-wrapper .cardhdr .change {
+  display: block;
+  text-align: left;
+}

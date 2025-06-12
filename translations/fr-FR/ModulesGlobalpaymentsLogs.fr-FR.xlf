@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="admin315ntjt5b5zndtxd6a3" source-language="fr-FR" target-language="fr-FR" datatype="plaintext">
+    <body>
+      <trans-unit id="efdf11d947807b9db04c346bd1cc3adb">
+        <source>Unable to create ApplePay Session</source>
+        <target>Impossible de créer une session ApplePay</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f5d56d28ab7eecd348218fc519bd49e6">
+        <source>Apple Pay requires your checkout be served over HTTPS</source>
+        <target>Apple Pay exige le protocole HTTPS pour votre page de paiement</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="04d82c5bf4f1dccc1657aff1ee11da66">
+        <source>Apple Pay is not supported on this device/browser</source>
+        <target>Apple Pay n'est pas pris en charge par ce dispositif/navigateur</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="40445e19b3fe06d9ef52b06776990b32">
+        <source>Order ID: %ord_id%. Order not found</source>
+        <target>ID de commande : %ord_id%. Commande introuvable</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="bb86af90f275723b4a98e35bfba05ee2">
+        <source>Order ID: %ord_id%. Transaction ID changed. Expected %gateway_trn_id% but found %order_trn_id%.</source>
+        <target>ID de commande: %ord_id%. ID de transaction changé. %gateway_trn_id% attendu, mais %order_trn_id% trouvé.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="041be187dc1fb81a1fdb9e0350f5c2d0">
+        <source>This request method is not supported.</source>
+        <target>Cette méthode de requête n'est pas prise en charge.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="da12f05c819597406db46b253cacdfab">
+        <source>Invalid request signature.</source>
+        <target>Signature de requête invalide.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="3c874252ab0f11a49ec1d1492b5a22b1">
+        <source>Order ID: %ord_od%. Missing payment method id.</source>
+        <target>ID de commande: %ord_od%. ID de mode de paiement manquant.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b7d92f61abf9140bea1c0489710aba04">
+        <source>Order ID: %ord_id%. Unexpected transaction status on statusUrl: %trn_status%</source>
+        <target>ID de commande: %ord_id%. Statut de transaction inattendu de l'UrlRetour : %trn_status%</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="14e2d2ba4946b4a7806e0b8c54dc5af0">
+        <source>Error completing order status. %message%</source>
+        <target>Erreur d'exécution du statut de commande. %message%</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b04a68e6318c437e19852a3326a612d9">
+        <source>Order ID: %ord_id%. Unexpected transaction status on returnUrl: %trn_status%</source>
+        <target>ID de commande : %ord_id%. Statut de transaction inattendu de l'UrlRetour : %trn_status%</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="1275857477da9100a690e6b919ca6410">
+        <source>Error completing order return. %message%</source>
+        <target>Erreur d'exécution de retour de commande. %message%</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="ad105fefc7d46db10dd08bd0b69bbebb">
+        <source>Error completing order cancel. %message%</source>
+        <target>Erreur d'exécution d'annulation de commande. %message%</target>
+        <note>Line: </note>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

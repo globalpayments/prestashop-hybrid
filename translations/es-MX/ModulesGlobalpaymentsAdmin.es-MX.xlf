@@ -1,0 +1,787 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="admin315ntjt5b5zndtxd6a3" source-language="es-MX" target-language="es-MX" datatype="plaintext">
+    <body>
+      <trans-unit id="bb5307ecdcfc97849b32525de215b3e5">
+        <source>Global Payments</source>
+        <target>Global Payments</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="374b4a9e2f293bf8df0db7a1dc6be890">
+        <source>Accept payments via Global Payments, while minimising your PCI Compliance requirements.</source>
+        <target>Acepte pagos a través de Global Payments mientras minimiza sus requisitos de cumplimiento de PCI.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="31bcd2a9de1df8c75bb619316c818c73">
+        <source>Warning: Are you sure you want to uninstall the Global Payments payment module?</source>
+        <target>Advertencia: ¿Está seguro de que desea desinstalar el módulo de pago de Global Payments?</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="92d4773a9f32fc3333cb8238471cf763">
+        <source>You have to enable the cURL extension on your server to install this module</source>
+        <target>Debe habilitar la extensión cURL en su servidor para instalar este módulo</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="dfa9d7216e22057d100fe1ac64bbbb8b">
+        <source>Please enter an App ID</source>
+        <target>Por favor ingrese un ID de aplicación</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="de7b4e1d5fc21606bc90333d1ec945f2">
+        <source>Please enter an App Key</source>
+        <target>Por favor, introduzca una clave de aplicación</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="cd4bdf551fc99fbb81427f6918a0da86">
+        <source>We're checking your credentials...</source>
+        <target>Estamos verificando sus credenciales…</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="cc07835c693269be28de6c512aa63cdf">
+        <source>Credentials Check</source>
+        <target>Verificación de credenciales</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="ea0247a8d6ffc96f59320bb074dd8828">
+        <source>You can enable only one GlobalPayments gateway at a time. Please disable %gateway% first</source>
+        <target>Solo puede habilitar una puerta de enlace de GlobalPayments a la vez. Por favor, deshabilite %gateway% primero</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="5d79b850107779465f199062ada33452">
+        <source>Please save the changes in the %tabname% tab before continue.</source>
+        <target>Por favor guarde los cambios en %tabname% antes de continuar.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="8691df0dbc09411102ab9c398a0aaf10">
+        <source>Unified Payments</source>
+        <target>Unified Payments</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="a849a06e943c4fa48e32586816a93852">
+        <source>Live Mode</source>
+        <target>Modo en vivo</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="13130fa6e7434fa4bf32eaea9a22e6a6">
+        <source><![CDATA[Get your App Id and App Key from your <a href="https://developer.globalpay.com/user/register"
+                    target="_blank">Global Payments Developer Account</a>.
+                    Please follow the instructions provided in the readme.txt file.
+                    When you are ready for Live, please contact
+                    <a href="mailto:%s%?Subject=PrestaShop%%20Live%%20Credentials">support</a>
+                    to get your live credentials.]]></source>
+        <target><![CDATA[Obtenga su ID de aplicación y clave de aplicación de su cuenta de desarrollador de <a href="https://developer.globalpay.com/user/register" target="_blank">pagos globales.</a>.
+Siga las instrucciones proporcionadas en el archivo readme.txt. Cuando esté listo para Live, comuníquese con. <a href="mailto:%s%?Subject=PrestaShop%%20Live%%20Credentials">Soporte</a> Para obtener tus credenciales en vivo.]]></target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="cf70233c5e04dd4e06a1a6dd00317770">
+        <source>Sandbox App Id</source>
+        <target>ID de la aplicación Sandbox:</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="6d560ef35cea1ed3c8aaa8bca4163d14">
+        <source>Sandbox App Key</source>
+        <target>Clave de la aplicación Sandbox:</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="15a058ea0e02fd2254be8f406648f7e2">
+        <source>Sandbox Account Name</source>
+        <target>Nombre de la cuenta de la zona de pruebas</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="572666e7045b4bb278991499a5b4b05c">
+        <source>Specify which account to use when processing a transaction.
+                     Default account will be used if this is not specified.</source>
+        <target>"Especifique qué cuenta usar al procesar una transacción. Se utilizará la cuenta predeterminada en caso de no hacerlo."</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="3ad701a95d47ee1a3a6f5a5aaba12cab">
+        <source>Live App Id</source>
+        <target>ID de aplicación en vivo</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="eb92eb6e56cdddd04b522663057efacc">
+        <source>Live App Key</source>
+        <target>Clave de aplicación en vivo:</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="5d55785a871474b5490ecc8da433a32d">
+        <source>Account Name</source>
+        <target>Nombre de cuenta</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="502459604bf56a063dfb31550af11d7b">
+        <source>Note: the Payment Methods will not be displayed at checkout if the credentials are not correct.</source>
+        <target>Nota: los métodos de pago no se mostrarán al finalizar la compra si las credenciales no son correctas</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="82a486370afbc5e127a28fee6a495fa2">
+        <source>Enable Logging</source>
+        <target>Habilitar registro:</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="348928b90074e1e9f3e8149d8b5ca719">
+        <source>Log all request to and from gateway. This can also log private data and should only be enabled
+                     in a development or stage environment.</source>
+        <target>Registra todas las solicitudes entrantes y salientes de la pasarela. Esto también permite registrar datos privados y solo debe habilitarse en entornos de desarrollo o de prueba.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="cf2c5bbd72d8e3fe66279dc6fff5db2f">
+        <source>Contact Url</source>
+        <target>Url de contacto: </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="e1f8b46e2b979964f486e915e52f1654">
+        <source>A link to an About or Contact page on your website with customer care information (maxLength: 256).</source>
+        <target>Un enlace a una página Acerca de o Contacto en su sitio web con información de atención al cliente (longitud máxima: 256)</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="3dfac2c2d7e658a011ba003ceb578325">
+        <source>Enable 3D Secure</source>
+        <target>Habilitar 3D Secure: </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="fa364d7cece7894c5e93fe9f40a04e26">
+        <source>Please provide Live Credentials.</source>
+        <target>Por favor proporcione credenciales en vivo.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="52f92d749b3f568681724221f51e2b10">
+        <source>Please provide Sandbox Credentials.</source>
+        <target>Por favor proporcione las credenciales de Sandbox.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="00e5a3e11cd6b8dcd78353b64862b0b3">
+        <source>Please provide a Contact Url (maxLength: 256).</source>
+        <target>Proporcione una URL de contacto (longitud máxima: 256).</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="d219af39de4224c9085ff1341fd35ebd">
+        <source>Please provide Order Transaction Descriptor (maxLength: 25).</source>
+        <target>Proporcione la descripción de la transacción del pedido (longitud máxima: 25).</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="2faec1f9f8cc7f8f40d521c4dd574f49">
+        <source>Enable</source>
+        <target>Permitir</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b78a3223503896721cca1303f776159b">
+        <source>Title</source>
+        <target>Título</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="d534f73a10ad1b0882a90698f719b41d">
+        <source>This controls the title which the user sees during checkout.</source>
+        <target>Esto controla el título que ve el usuario durante el pago.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="73a61696f100b3858511e212a3feea6b">
+        <source>Credit Card</source>
+        <target>Tarjeta de crédito </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="2497d020f60c9b96b9197a84ff85758d">
+        <source>Payment Action</source>
+        <target>Acción de pago</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="ee093673713afc3053520814aac8600c">
+        <source>Choose whether you wish to capture funds immediately or authorize payment only for a
+                         delayed capture.</source>
+        <target>Elija si desea capturar fondos inmediatamente o autorizar el pago sólo para una captura retrasada.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="d015e3f14f694fc6773c305c4fa5aa85">
+        <source>Authorize + Capture</source>
+        <target>Autorizar + Captura</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="0707bd62bc0027330ad2bc908a142cbc">
+        <source>Authorize only</source>
+        <target>Solo Autorizar </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="af75288aa63b240b50c82309a63b2c61">
+        <source>Allow Card Saving</source>
+        <target>Permitir Guardar Tarjeta: </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="5d87ab1a6cd31e00b1a70a3f93cd8373">
+        <source><![CDATA[Note: to use the card saving feature, you must have multi-use token
+                        support enabled on your account. Please contact
+                        <a href="mailto:%s%?Subject=PrestaShop%%20Allow%%20Card%%20Saving">support</a>
+                        with any questions regarding this option.]]></source>
+        <target><![CDATA[Nota: Para usar la función de ahorro de tarjetas, debe tener habilitada la función de tokens multiuso en su cuenta. Por favor, póngase en contacto con nosotros. <a href="mailto:%s%?Subject=PrestaShop%%20Allow%%20Card%%20Saving">Apoyo</a> Si tienes preguntas sobre esta opción.]]></target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="e9201c7035398fbdca20e27908f21fb0">
+        <source>Order Transaction Descriptor</source>
+        <target>Descriptor de transacción de pedido:</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="28a928483d0d85b9e4fe7a9f7d47fba9">
+        <source><![CDATA[During a Capture or Authorize payment action, this value will be passed along as the
+                        transaction-specific descriptor listed on the customer's bank account. Please contact
+                        <a href="mailto:%s?Subject=PrestaShop%%20Transaction%%20Descriptor%%20Option">
+                        support</a> with any questions regarding this option (maxLength: 25).]]></source>
+        <target><![CDATA[Durante una acción de Capturar o Autorizar pago, este valor se transmitirá como el descriptor específico de la transacción que figura en la cuenta bancaria del cliente.
+                        <a href="mailto:%s?Subject=PrestaShop%%20Transaction%%20Descriptor%%20Option">
+                        Apoyo</a> Comuníquese con el soporte si tiene alguna pregunta sobre esta opción (longitud máxima: 25).]]></target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="c20cc8f5bb7d26404f80b1c990c8a7fd">
+        <source>Sort Order</source>
+        <target>Orden de clasificación</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="43c325bf14d42a4be5493736d6f38e78">
+        <source>Sort Order must have a numeric value</source>
+        <target>El orden de clasificación debe tener un valor numérico.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="8b6f00f749dcf8156fd0d2a3c2aaeb37">
+        <source>Pay with Click To Pay</source>
+        <target>Pague con Click to Pay </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="ac6ba88b1cb28de03cd1b9eb9f00d437">
+        <source>Click To Pay Client ID</source>
+        <target>ID de cliente Click to Pay </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="d9c6fd8fc8e91c9ea2fd9af8ad201d57">
+        <source>Your Merchant ID provided by Click To Pay</source>
+        <target>Su Merchant ID proporcionado por Google.  Click To Pay</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="c935eb92508ddc427341afdc23fef70c">
+        <source>Render Click To Pay natively</source>
+        <target>Renderizar Click to Pay de forma nativa </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="a5b8865f33b6aced85fe0c8d53b89cf6">
+        <source>Click To Pay will render natively within the payment form</source>
+        <target>"Click To Pay se mostrará de forma nativa dentro del formulario de pago."</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="9a1bd0ee09dab4d42bf3226cbe564ce9">
+        <source>Accept Canadian Visa debit cards</source>
+        <target>"Acepte tarjetas de débito Visa canadienses"</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="693c3bc3cb8c1f0d72dc2cdd657102ba">
+        <source>Display Global Payments footer</source>
+        <target>Mostrar pie de página de Global Payments </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="152cabc984c2b34bd2643219a74ce6b1">
+        <source>Display Global Payments footer within the payment form</source>
+        <target>"Mostrar el pie de página de Global Payments dentro del formulario de pago"</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="2575d9ac88299cab0aa511fdeaf0f96b">
+        <source>Accepted Cards</source>
+        <target>Tarjetas aceptadas </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="3197c9f4f49d64c579aa2de223f50f6e">
+        <source>Please provide Click To Pay Client ID.</source>
+        <target>Proporcione la identificación del cliente de Click To Pay.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="e9eb4a9e6b5096291067f6f07efe7160">
+        <source>Please provide at least one accepted card type.</source>
+        <target>Proporcione al menos un tipo de tarjeta aceptada.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="ad7608ada46c853f7d02a30cddde3c8a">
+        <source>Pay with Google Pay</source>
+        <target>Pagar con Google Pay</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="24f567e8061324676b314fdfb3fad31a">
+        <source>Global Payments Client ID</source>
+        <target>ID de Cliente Global Payments:</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="4a9efa1af0f328835bda682f093a594e">
+        <source>Your Client ID provided by Global Payments.</source>
+        <target>Su ID de Cliente proporcionado por Global Payments: </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="a4de893237fe9b2548c21a68fbb74d47">
+        <source>Google Merchant ID</source>
+        <target>Google Merchant ID:</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="88a75479b92d0b0629dfb35dafd5ccb4">
+        <source>Your Merchant ID provided by Google.</source>
+        <target>Su Merchant ID proporcionado por Google.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="5be3e1f808385e9c6c6576f1c4114aa8">
+        <source>Google Merchant Display Name</source>
+        <target>Nombre mostrado del Google Merchant </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="96db3055278e42181a1026e1d282e4b7">
+        <source>Displayed to the customer in the Google Pay dialog.</source>
+        <target>Se muestra al cliente en el diálogo de Google Pay.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f05cf6fe5310bad30b9cfb696d3502d4">
+        <source>Allowed Card Auth Methods</source>
+        <target>"Métodos de autenticación de tarjeta permitidos"</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="34bee8e1fea9c3dbf85a857b630a6e1d">
+        <source><![CDATA[<strong>PAN_ONLY:</strong> This authentication method is associated with payment cards stored
+                    on file with the user's Google Account. </br>
+                    <strong>CRYPTOGRAM_3DS:</strong> This authentication method is associated with cards
+                    stored as Android device tokens.
+                    </br></br>
+                    PAN_ONLY can expose the FPAN, which requires an additional SCA step up to a 3DS check.
+                    Currently, Global Payments does not support the Google Pay SCA challenge with an FPAN.
+                    For the best acceptance, we recommend that you provide only the CRYPTOGRAM_3DS option.]]></source>
+        <target><![CDATA[<strong>PAN_ONLY:</strong> Este método de autenticación está asociado con las tarjetas de pago almacenadas en el archivo de la cuenta de Google del usuario. </br>
+<strong>CRYPTOGRAM_3DS:</strong>Este método de autenticación está asociado con tarjetas almacenadas como tokens de dispositivos Android.
+</br></br>
+PAN_ONLY puede exponer el FPAN, lo que requiere un paso de seguridad adicional a la verificación de 3DS.
+Actualmente, Global Payments no carga esta etapa de seguridad Google Pay con un FPAN. Para optimizar la aceptación, le recomendamos no ofrecer la opción CRYPTOGRAM_3DS]]></target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="909735083e539c5f31b6380233ca6521">
+        <source>Button Color</source>
+        <target>Color del botón:</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="25a81701fbfa4a1efdf660a950c1d006">
+        <source>White</source>
+        <target>Blanco</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="e90dfb84e30edf611e326eeb04d680de">
+        <source>Black</source>
+        <target>Negro </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="dcb94b7f48d7fb3a9dd6429de254847c">
+        <source>Please provide Global Payments Client ID.</source>
+        <target>Por favor proporcione su ID de Cliente Global Payments.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="306bff6bb538143aa8e6bbdf1e416ced">
+        <source>Please provide at least one allowed card auth method.</source>
+        <target>Por favor proporcione al menos un método de autorización aceptado.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="6f94a3731cb33d08e0f1cfe06091397b">
+        <source>Pay with Apple Pay</source>
+        <target>Pago con Apple Pay </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="60486dbf5deaa7101c00b81e1a2e16ef">
+        <source>Apple Merchant ID</source>
+        <target>Merchant ID de Apple </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="e8d6e30578105a1512b97d62dec6fa9c">
+        <source>Apple Merchant Cert Path</source>
+        <target>Certh Path del Apple Merchant </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="a9d027237c20d0b674e0b886395030b5">
+        <source>Apple Merchant Key Path</source>
+        <target>Key Path del Apple Merchant</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="ae25c8aa7b42dab991fc6567bf5b0279">
+        <source>Apple Merchant Key Passphrase</source>
+        <target>Key Passphrase del Apple Merchant </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="ba7643687da806df5fa4493f7907b573">
+        <source>Apple Merchant Domain</source>
+        <target>Dominio del Apple Merchant </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="7ebc93c6449e9f31f4191581a8a23b64">
+        <source>Apple Merchant Display Name</source>
+        <target>Display Name del Apple Merchant </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="0e2bb6efb09ea1614bbb3fb733a8c7a0">
+        <source>Accepted cards</source>
+        <target>Tarjetas aceptadas </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="aace3c30cb04804e2ccde036f49e2345">
+        <source>Apple Pay Button Styles</source>
+        <target>Estilo de botones de Apple Pay </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="9bec5a8f43e1dccb33f30745d36be9b1">
+        <source>Control the Apple Pay button appearance.</source>
+        <target>Controle la apariencia del botón de Apple Pay </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="473e600f1e5139d49aacdd03f478e768">
+        <source>White with Outline</source>
+        <target>Blanca con contorno</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="a2169e82484a39cbb9c6f8afcfb84f0a">
+        <source>Please provide Apple Merchant Id.</source>
+        <target>Por favor proporcione su Apple Merchant ID</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f76ad6d5b2317d483422eafe7c396308">
+        <source>Please provide Apple Merchant Cert Path.</source>
+        <target>Por favor proporcione su ruta del certificado de Apple Merchant.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="16c316d7dc198d084991836a510c0a89">
+        <source>Please provide Apple Merchant Key Path.</source>
+        <target>Por favor proporcione su Ruta clave de Apple Merchant </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b27a7efdf1ffb30f187f50288391a3c3">
+        <source>Please provide Apple Merchant Domain.</source>
+        <target>Por favor propocione su dominio de Apple Merchant </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="c337f629bc19ce39891903ba14519b76">
+        <source>Please provide Apple Merchant Display Name.</source>
+        <target>Por favor propocione su nombre mostrado de Apple Merchant </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="614832c98a5daa26fbc2e149b0d7ecb3">
+        <source>Pay with Affirm</source>
+        <target>Pague con Affirm </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="8a24059e8abcef6d34fae751e089da08">
+        <source>Pay with Clearpay</source>
+        <target>Pague con Clearpay </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b5ce9b47c70053747759b302985a95f5">
+        <source>Pay with Klarna</source>
+        <target>Pague con Klarna </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="2fcecaf04456ae2ceac826fd0ccaaf1c">
+        <source>Account Number</source>
+        <target>Número de cuenta</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="219250ff77e4f5b831c74eb0979a4497">
+        <source>Account number, for bank transfers within the UK (UK to UK bank).
+                    Only required if no bank details are stored on account.</source>
+        <target>Número de cuenta para transferencias bancarias dentro del Reino Unido (de Reino Unido a banco del Reino Unido). Solo es necesario si no hay datos bancarios almacenados en la cuenta.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="61318455dc754f509f20a110516e83b1">
+        <source>The name of the individual or business on the bank account.
+                    Only required if no bank details are stored on account.</source>
+        <target>El nombre de la persona o empresa que figura en la cuenta bancaria.
+                Solo es necesario si no hay datos bancarios almacenados en la cuenta.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="5f49020519c6dd14f2db6d3f22cd58d0">
+        <source>Sort Code</source>
+        <target>Código de clasificación</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="42dbb2d3d6b500e3a9edd3798875ce99">
+        <source>Six digits which identify the bank and branch of an account.
+                    Included with the Account Number for UK to UK bank transfers.
+                    Only required if no bank details are stored on account.</source>
+        <target>Seis dígitos que identifican el banco y la sucursal de una cuenta. Incluido con el número de cuenta para transferencias bancarias del Reino Unido a Reino Unido. Solo es necesario si no se almacenan datos bancarios en la cuenta.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="350e17d65ded375d643259e7eed26e2a">
+        <source>IBAN</source>
+        <target>IBAN</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="bf0efc93deebb8f6e7137d25bada2ca3">
+        <source><![CDATA[Key field for bank transfers for Europe-to-Europe transfers.
+                    Only required if no bank details are stored on account. <br/>
+                    Only required for EUR transacting merchants.]]></source>
+        <target><![CDATA[Campo clave para transferencias bancarias entre Europa.
+                    Solo es necesario si no hay datos bancarios almacenados en la cuenta.
+                    Solo es necesario para comerciantes que realizan transacciones en EUR.]]></target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="790d59ef178acbc75d233bf4211763c6">
+        <source>Countries</source>
+        <target>Países</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="95c10bf9f413a42e8cb0677e809d8bce">
+        <source><![CDATA[Allows you to input a COUNTRY or string of COUNTRIES to limit what is shown to the customer.
+                    Including a country overrides your default account configuration. <br/>
+                    Format: List of ISO 3166-2 (two characters) codes separated by a | <br/>
+                    Example: FR|GB|IE]]></source>
+        <target><![CDATA[Permite introducir un PAÍS o una cadena de PAÍSES para limitar lo que se muestra al cliente.
+                    Incluir un país anula la configuración predeterminada de la cuenta. <br/>
+                    Formato: Lista de códigos ISO 3166-2 (dos caracteres) separados por un | <br/>
+                    Ejemplo: FR|GB|IE
+        ]]></target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="dfcfc43722eef1eab1e4a12e50a068b1">
+        <source>Currencies</source>
+        <target>Monedas</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f4bd0ea696fda67c0e4678d6ff7d5219">
+        <source>Note: The payment method will be displayed at checkout only for the selected currencies.</source>
+        <target>Nota: El método de pago se mostrará al finalizar la compra solo para las monedas seleccionadas.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="3b879caf864d971357f0c126735c88fa">
+        <source>Please provide at least one allowed currency.</source>
+        <target>Proporcione al menos una moneda permitida.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="dac2693baa5c5c9a5318609ed81c4f2a">
+        <source>Pay with PayPal</source>
+        <target>Pague con PayPal </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="cbacfeafbbf76b6b3813d733aa6c4585">
+        <source>%amount% %currency% was %action%. Transaction ID: %trn_id%</source>
+        <target>%amount% %currency% era %action%. ID de transacción: %trn_id%</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="41a2e03f8686640344badf516a008503">
+        <source>charge</source>
+        <target>cargar</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="48aee20d947736a18c6e9d09b526f75a">
+        <source>charged</source>
+        <target>Cargado</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="0c5c43c7900a58a998c872f937ae33ad">
+        <source>authorize</source>
+        <target>autorizar</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f7d543c9b824323b84ab11668002f207">
+        <source>authorized</source>
+        <target>Autorizado</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f4ab78a26b342fd24a26dd587a3456bd">
+        <source>refund/reverse</source>
+        <target>reembolso/reversa</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="05da73826e25435ae69bc8f984c79868">
+        <source>reversed or refunded</source>
+        <target>revertido o reembolsado</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="d7ba9bbfda42b9657f14ee37ef76150b">
+        <source>capture</source>
+        <target>captura</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="2f77656f4c6180990cee5ce65bdefe74">
+        <source>captured</source>
+        <target>capturada</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="4c146472a642cf93ca6d0a5ecaa72b25">
+        <source>initiate payment</source>
+        <target>Iniciar el pago </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="9cd5622f36ab9090359c3cf3ca4ddda3">
+        <source>initiated</source>
+        <target>iniciado</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="585adea938cab351f443430f818235b3">
+        <source>decline/cancel</source>
+        <target>rechazar/cancelar</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f9176b97dd3962b977269760d5230910">
+        <source>declined or canceled</source>
+        <target>rechazado o cancelado</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="4704d9f78b6ee83f08d8e80a8c2b9f53">
+        <source>customer cancel</source>
+        <target>Cancelación del cliente</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="eb9e6ba64bcdd851ec70369e110b37e8">
+        <source>cancelled by customer</source>
+        <target>Cancelado por el cliente </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="41e7d9788afaace832152cb384562418">
+        <source>%title% Address Information</source>
+        <target>%title% Información de la dirección</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="c888438d14855d7d96a2724ee9c306bd">
+        <source>Settings updated</source>
+        <target>Configuración actualizados</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f4f70727dc34561dfde1a3c529b6205c">
+        <source>Settings</source>
+        <target>Ajustes</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="c9cc8cce247e49bae79f15173ce97354">
+        <source>Save</source>
+        <target>Ahorrar</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="93cba07454f06a4a960172bbd6e2a435">
+        <source>Yes</source>
+        <target>Sí</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="bafd7322c6e97d25b6299b5d6fe8920b">
+        <source>No</source>
+        <target>No</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="38e1b3b126cb6e8f14c4405e7331c26b">
+        <source>Your credentials were successfully confirmed!</source>
+        <target>¡Tus credenciales fueron confirmadas exitosamente!</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="7f816061ea43a2bc590b8d101d5fb091">
+        <source>Unable to perform request. Invalid data.</source>
+        <target>No se pudo realizar la solicitud. Datos no válidos.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="ccfc358a698c0a0a6c0c33c647fb46e0">
+        <source>Unable to perform request. Invalid data. %message%</source>
+        <target>No se pudo realizar la solicitud. Datos no válidos. %message%</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="88427ec035734b45aae9f7d8859a5008">
+        <source>Transaction ID</source>
+        <target>ID de Transacción</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="2654fdb3102efdd9c304a97b43351de4">
+        <source>Transaction Status</source>
+        <target>Estatus de transacción </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="345282a4bcdbe37a542ba480ce3c61ad">
+        <source>Transaction Type</source>
+        <target>Tipo de Transacción </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b2f40690858b404ed10e62bdf422c704">
+        <source>Amount</source>
+        <target>Monto </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="386c339d37e737a436499d423a77df0c">
+        <source>Currency</source>
+        <target>Moneda</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="e9ffab8b5a4a88a51ca16a1396f0ce8b">
+        <source>BNPL Provider</source>
+        <target>Proveedor BNPL</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="7c9a3504dd4ce74b8021267ae1802968">
+        <source>Payment Type</source>
+        <target>Tipo de pago </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="023be9491dfa3436433af4fa71c13249">
+        <source>Provider Name</source>
+        <target>Nombre del proveedor</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="66632ded25c62d898f6d40d5e2114f8a">
+        <source>Global Payments Transaction Management</source>
+        <target>Gestión de Transacciones de Global Payments </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="004bf6c9a40003140292e97330236c53">
+        <source>Action</source>
+        <target>Acción</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="44a50f07b4bdc57740901280f9eddaf5">
+        <source>Capture</source>
+        <target>Captura</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="8d4cf820a2e72b0633b35c27901098ec">
+        <source>You can Capture a transaction for any amount up to 115% or the
+                                            original value.</source>
+        <target>Puedes capturar una transacción por cualquier monto hasta 115% del valor original </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="68536d0326331f1b51904151be2aca36">
+        <source>Pay for Order</source>
+        <target>Pagar por el pedido </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="fd2857e56de3abb1f1c8c6f62c874636">
+        <source>Get Transaction Details</source>
+        <target>Obten detalles de transacción </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="99938b17c91170dfb0c2f3f8bc9f2a85">
+        <source>Pay</source>
+        <target>Pago </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="bb6d16658b4d9dfca71d75ff42867000">
+        <source>Global Payments Transaction Management History</source>
+        <target>Historial de gestión de transacciones de Global Payments</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="44749712dbec183e983dcd78a7736c41">
+        <source>Date</source>
+        <target>Fecha</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="8eea62084ca7e541d918e823422bd82e">
+        <source>Result</source>
+        <target>Resultado</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="0c458988127eb2150776881e2ef3f0c4">
+        <source>Shipping address</source>
+        <target>Dirección de envío</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="1fbc7e5f1b92c7ec072397b59a0bb5da">
+        <source>Billing address</source>
+        <target>Dirección de facturación </target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="3ac7a7a0fe486f65e677b4c383094222">
+        <source>Transaction details</source>
+        <target>Detalles de transacción</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="2e1d6bd79a897e73d30fea3cd5ecc992">
+        <source>There was something wrong, please try again later.</source>
+        <target>Algo salió mal, por favor intente más tarde.</target>
+        <note>Line: </note>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

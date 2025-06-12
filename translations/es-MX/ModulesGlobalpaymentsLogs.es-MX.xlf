@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="admin315ntjt5b5zndtxd6a3" source-language="es-MX" target-language="es-MX" datatype="plaintext">
+    <body>
+      <trans-unit id="efdf11d947807b9db04c346bd1cc3adb">
+        <source>Unable to create ApplePay Session</source>
+        <target>No se puede crear una sesión de ApplePay</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f5d56d28ab7eecd348218fc519bd49e6">
+        <source>Apple Pay requires your checkout be served over HTTPS</source>
+        <target>Apple Pay requiere que su pago se realice a través de HTTPS</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="04d82c5bf4f1dccc1657aff1ee11da66">
+        <source>Apple Pay is not supported on this device/browser</source>
+        <target>Apple Pay no es compatible con este dispositivo/navegador</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="40445e19b3fe06d9ef52b06776990b32">
+        <source>Order ID: %ord_id%. Order not found</source>
+        <target>ID de pedido: %ord_id%. Orden no encontrada</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="bb86af90f275723b4a98e35bfba05ee2">
+        <source>Order ID: %ord_id%. Transaction ID changed. Expected %gateway_trn_id% but found %order_trn_id%.</source>
+        <target>ID de pedido: %ord_id%. El ID de transacción cambió. Se esperaba %gateway_trn_id%, pero se encontró %order_trn_id%.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="041be187dc1fb81a1fdb9e0350f5c2d0">
+        <source>This request method is not supported.</source>
+        <target>Este método de solicitud no es compatible.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="da12f05c819597406db46b253cacdfab">
+        <source>Invalid request signature.</source>
+        <target>Firma de solicitud no válida.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="3c874252ab0f11a49ec1d1492b5a22b1">
+        <source>Order ID: %ord_od%. Missing payment method id.</source>
+        <target>ID del pedido: %ord_od%. Falta el ID del método de pago.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b7d92f61abf9140bea1c0489710aba04">
+        <source>Order ID: %ord_id%. Unexpected transaction status on statusUrl: %trn_status%</source>
+        <target>ID de pedido: %ord_id%. Estado de transacción inesperado en statusUrl: %trn_status%</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="14e2d2ba4946b4a7806e0b8c54dc5af0">
+        <source>Error completing order status. %message%</source>
+        <target>Error al completar el estado del pedido. %message%</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b04a68e6318c437e19852a3326a612d9">
+        <source>Order ID: %ord_id%. Unexpected transaction status on returnUrl: %trn_status%</source>
+        <target>ID del pedido: %ord_id%. Estado de transacción inesperado en la URL de retorno: %trn_status%</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="1275857477da9100a690e6b919ca6410">
+        <source>Error completing order return. %message%</source>
+        <target>Error al completar la devolución del pedido. %message%</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="ad105fefc7d46db10dd08bd0b69bbebb">
+        <source>Error completing order cancel. %message%</source>
+        <target>Error al completar la cancelación del pedido. %message%</target>
+        <note>Line: </note>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

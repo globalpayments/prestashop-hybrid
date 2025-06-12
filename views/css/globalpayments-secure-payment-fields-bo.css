@@ -1,0 +1,40 @@
+/* Fix for GP-API Transaction Id's that are breaking the table */
+#view_order_payments_block, #formAddPaymentPanel {
+    overflow: auto;
+}
+
+/* Pay for Order styling */
+#globalpayments-pay-form, #payment-confirmation button, #payment-confirmation .ps-hidden-by-js,
+.payment-option.hide > span, .payment-option.hide > label {
+    display: none;
+}
+
+/* Get Transaction Details styling */
+.globalpayments-error {
+    margin: 0 0 10px;
+    padding: 12px 5px;
+    font-size: 1.3rem;
+    background: #fae5e5;
+    color: #e02b27;
+    position: relative;
+    border-radius: 2px;
+}
+
+.globalpayments-credentials-success {
+    background: #72c279;
+    border: none;
+    border-radius: 5px;
+    color: #ffffff;
+    margin: 0 0 1px;
+    padding: 10px;
+    position: relative;
+    text-shadow: none;
+}
+
+#globalpayments-get-transaction-details-modal, .globalpayments-error {
+    display: none;
+}
+
+.globalpayments-get-transaction-details-information-table tr:not(:last-child){
+    margin-bottom: .5rem;
+}

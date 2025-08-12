@@ -30,7 +30,9 @@ use GlobalPayments\PaymentGatewayProvider\PaymentMethods\DigitalWallets\ApplePay
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\DigitalWallets\ClickToPay;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\DigitalWallets\GooglePay;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\OpenBanking\BankPayment;
+use GlobalPayments\PaymentGatewayProvider\Platform\Utils;
 use GlobalPayments\PaymentGatewayProvider\Requests;
+use GlobalPayments\PaymentGatewayProvider\Gateways\DiUiApms\{BankSelect, Blik};
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -155,6 +157,8 @@ class GpApiGateway extends AbstractGateway
             'apiVersion' => GpApiConnector::GP_API_VERSION,
             'accessToken' => $this->getAccessToken(),
             'enableThreeDSecure' => $this->enableThreeDSecure,
+            'enableBlikPayment' => $this->enableBlikPayment,
+            'enableOpenBanking' => $this->enableOpenBanking,
             'env' => $this->isProduction ? parent::ENVIRONMENT_PRODUCTION : parent::ENVIRONMENT_SANDBOX,
             'fieldValidation' => [
                 'enabled' => true,
@@ -317,18 +321,10 @@ class GpApiGateway extends AbstractGateway
 
     public function securePaymentFieldsConfiguration()
     {
-        $fields = parent::securePaymentFieldsConfiguration();
-        $fields['card-holder-name-field'] = [
-            'class' => 'card-holder-name',
-            'label' => $this->translator->trans('Card Holder Name', [], 'Modules.Globalpayments.Shop'),
-            'placeholder' => 'Jane Smith',
-            'messages' => [
-                'validation' => $this->translator->trans(
-                    'Please enter a valid Card Holder Name',
-                    [],
-                    'Modules.Globalpayments.Shop'
-                ),
-            ],
+        $fields = [
+            'payment-form' => [
+				'class'       => 'payment-form'
+            ]
         ];
 
         return $fields;
@@ -423,18 +419,23 @@ class GpApiGateway extends AbstractGateway
         // added this 28th March 
         $context->controller->registerJavascript(
             'globalpayments',
-            $path . '/views/js/globalpayments.js'
+            'https://js.globalpay.com/' . Utils::getJsLibVersion() . '/globalpayments'
+                . (defined('_PS_MODE_DEV_') && _PS_MODE_DEV_ ? '' : '.min') . '.js',
+            $path . '/views/js/globalpayments-secure-payment-fields.js',
+            ['position' => 'bottom', 'priority' => 100]
         );
 
         $context->controller->registerJavascript(
             'globalpayments-secure-payment-fields',
-            $path . '/views/js/globalpayments-secure-payment-fields.js'
+            $path . '/views/js/globalpayments-secure-payment-fields.js',
+            ['position' => 'bottom', 'priority' => 100]
         );
 
         $context->controller->registerJavascript(
             'globalpayments-threedsecure-lib',
             $path . '/views/js/globalpayments-3ds'
-                . (defined('_PS_MODE_DEV_') && _PS_MODE_DEV_ ? '' : '.min') . '.js'
+            . (defined('_PS_MODE_DEV_') && _PS_MODE_DEV_ ? '' : '.min') . '.js',
+            ['position' => 'bottom', 'priority' => 200]
         );
 
         \Media::addJsDef(
@@ -484,5 +485,22 @@ class GpApiGateway extends AbstractGateway
             new Klarna(),
             new BankPayment(),
         ];
+    }
+
+    /**
+     * Use DiUi handler or abstract method
+     *
+     * @param int $order_id
+     *
+     * @return array
+     * @throws ApiException
+     */
+    public function processPayment( $order_id ) {
+        if (!empty($_POST["blik-payment"]) && $_POST["blik-payment"] === "1")
+            return Blik::processBlikSale( $this, $order_id );
+        if (!empty($_POST["open_banking"]))
+            return BankSelect::processOpenBankingSale( $this, $order_id, $_POST["open_banking"] );
+
+        return parent::processPayment( $order_id );
     }
 }

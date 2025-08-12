@@ -4,7 +4,10 @@
 
 # Changelog
 
-## Latest Version - ## v1.6.6 (04/24/25)
+## Latest Version - ## v1.7.0 (08/12/25)
+- Added DiUI-based APMs: Blik & Bank Select (Poland-only APMs)
+
+## v1.6.6 (04/24/25)
 - Added support for Spanish Translations
 - Added local js file for 9.0.0 js caching
 

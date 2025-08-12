@@ -96,7 +96,7 @@
             var that = this;
 
             // General
-            $(document).ready(function () {
+            $(document).ready(function (e) {
                 $(helper.getPlaceOrderButtonSelector()).on('click', function ($e) {
                     if (helper.getTokenId(that.id) && that.id === 'globalpayments_ucp') {
                         $e.preventDefault();
@@ -137,10 +137,15 @@
          *
          * @returns
          */
-        renderPaymentFields: function () {
-            if ($('#' + this.id + '-' + this.fieldOptions['card-number-field'].class).children().length > 0) {
-                return;
+        renderPaymentFields: function (e) {
+            if (!this.gatewayOptions.accessToken) {
+                if (
+                    $('#' + this.id + '-' + this.fieldOptions['card-number-field'].class).children().length > 0
+                ) {
+                    return;
+                }
             }
+
             if (!GlobalPayments.configure) {
                 console.log('Warning! Payment fields cannot be loaded');
                 return;
@@ -156,6 +161,44 @@
                 helper.showPaymentError(this.id, gatewayConfig.message);
             }
 
+            // Add Blik configuration if enabled
+            let acceptBlik = (this.isBlikPaymentEnabled() === true) ? true : false;
+             let acceptOpenBanking = (this.isOpenBankingEnabled() === true) ? true : false;
+
+             let apmsEnabled = (acceptBlik || acceptOpenBanking) ? true : false;
+
+             if (apmsEnabled) {
+                gatewayConfig.apms = {
+                    currencyCode: this.order.currency,
+                    countryCode: this.order.billingAddress.countryCode,
+                    allowedCardNetworks: [
+                        GlobalPayments.enums.CardNetwork.Visa,
+                        GlobalPayments.enums.CardNetwork.Mastercard,
+                        GlobalPayments.enums.CardNetwork.Amex,
+                        GlobalPayments.enums.CardNetwork.Discover
+                    ],
+                    nonCardPayments: {
+                    allowedPaymentMethods: [
+                        {
+                        provider: GlobalPayments.enums.ApmProviders.Blik,
+                        enabled: acceptBlik,
+                        },
+                    ]
+                    }
+                };
+
+                // using push because Open Banking doesn't respect the 'enabled' property currently
+                if (acceptOpenBanking) {
+                    gatewayConfig.apms.nonCardPayments.allowedPaymentMethods.push(
+                        {
+                        provider: GlobalPayments.enums.ApmProviders.OpenBanking,
+                        enabled: acceptOpenBanking,
+                        category: "TBD"
+                        }
+                    )
+                }
+            }
+
             // ensure the submit button's parent is on the page as this is added
             // only after the initial page load
             if ($(helper.getSubmitButtonTargetSelector(this.id)).length === 0) {
@@ -163,12 +206,222 @@
             }
 
             GlobalPayments.configure(gatewayConfig);
-            this.cardForm = GlobalPayments.ui.form(
-                {
-                    fields: this.getFieldConfiguration(),
-                    styles: this.getStyleConfiguration()
+
+            // Utilize Drop-in UI for GP API
+            if (gatewayConfig.accessToken) {
+                var formConfig = {
+                    style: "gp-default"
+                };
+
+                // Only add amount and apms when BLIK is enabled
+                if (apmsEnabled) {
+                    formConfig.amount = this.order.amount ? this.order.amount : '0';
+                    formConfig.apms = [];
                 }
-            );
+
+                this.cardForm = GlobalPayments.creditCard.form(
+                    '#' + this.id + '-' + this.fieldOptions['payment-form'].class,
+                    formConfig
+                )
+            } else {
+                this.cardForm = GlobalPayments.ui.form(
+                    {
+                        fields: this.getFieldConfiguration(),
+                        styles: this.getStyleConfiguration()
+                    }
+                );
+            }
+
+            // To initiate blik transaction process
+            this.cardForm.on(GlobalPayments.enums.ApmEvents.PaymentMethodSelection, (paymentProviderData, event) => {
+                const {
+                    provider,
+                    countryCode,
+                    currencyCode,
+                    bankName,
+                    acquirer
+                } = paymentProviderData;
+                console.log('Selected provider: ' + provider);
+
+                // Prevent any default form submission behavior for BLIK
+                if (provider === GlobalPayments.enums.ApmProviders.Blik) {
+                    // Prevent default form submission if event is available
+                    if (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    // Also prevent any form submission on the page
+                    $('form').off('submit.blik').on('submit.blik', function(e) {
+                        console.log('Form submission prevented for BLIK payment');
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        return false;
+                    });
+                }
+
+                if (provider === GlobalPayments.enums.ApmProviders.OpenBanking) {
+                    // Prevent default form submission if event is available
+                    if (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    // Also prevent any form submission on the page
+                    $('form').off('submit.open-banking').on('submit.open-banking', function(e) {
+                        console.log('Form submission prevented for Open Banking payment');
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        return false;
+                    });
+                }
+
+                let detail = {};
+
+                switch (provider) {
+                    case GlobalPayments.enums.ApmProviders.Blik:
+                        console.log('BLIK payment method selected');
+
+                        // Block UI during processing
+                        helper.blockOnSubmit();
+
+                        // IMPORTANT: Do NOT call helper.placeOrder() here as it causes form submission
+                        // Make AJAX call to process Blik transaction
+                        var ajaxUrl = helper.getAjaxUrl('asyncPaymentMethodValidation');
+                        var ajaxData = {
+                            payment_method: 'blik',
+                            gateway_id: this.id,
+                            action: 'initiate_sale'
+                        };
+
+                        // Add order data if available
+                        if (this.order) {
+                            if (this.order.amount) ajaxData.amount = this.order.amount;
+                            if (this.order.currency) ajaxData.currency = this.order.currency;
+                        }
+                        console.log('BLIK AJAX Data:', ajaxData);
+                        $.ajax({
+                            url: ajaxUrl,
+                            type: 'POST',
+                            dataType: 'json',
+                            data: ajaxData,
+                            success: function(response) {
+                                helper.unblockOnError();
+                                // Remove form submission prevention
+                                $('form').off('submit.blik');
+                                if (response.success && response.redirect_url) {
+                                    // Create detail object with actual redirect URL from response
+                                    const detail = {
+                                        provider,
+                                        redirect_url: response.redirect_url,
+                                    };
+                                    // Dispatch the custom event with actual redirect URL
+                                    const merchantCustomEventProvideDetails = new CustomEvent(GlobalPayments.enums.ApmEvents.PaymentMethodActionDetail, {
+                                        detail: detail
+                                    });
+                                    window.dispatchEvent(merchantCustomEventProvideDetails);
+
+                                    console.log('Redirecting to:', response.redirect_url);
+
+                                } else {
+                                    helper.showPaymentError(this.id, response.message || 'Payment processing failed');
+                                }
+                            }.bind(this),
+                            error: function(xhr, error) {
+                                helper.unblockOnError();
+
+                                // Remove form submission prevention on error
+                                $('form').off('submit.blik');
+
+                                helper.showPaymentError(this.id, 'Payment processing failed. Please try again.');
+                                console.error('Blik payment error:', error);
+                                console.error('XHR Response:', xhr.responseText);
+                            }.bind(this)
+                        });
+
+                        // Return early to prevent further processing
+                        return;
+                    case GlobalPayments.enums.ApmProviders.OpenBanking:
+                        console.log('bankName',bankName);
+                        if(!bankName){
+                            detail = {
+                                provider,
+                                redirect_url: "https://fluentlenium.com/",
+                                countryCode,
+                                currencyCode,
+                            }
+                        } else {
+                                helper.blockOnSubmit();
+                                // IMPORTANT: Do NOT call helper.placeOrder() here as it causes form submission
+                                // Make AJAX call to process Open Banking transaction
+                                var ajaxUrl = helper.getAjaxUrl('asyncPaymentMethodValidation');
+                                var ajaxData = {
+                                    payment_method: 'open_banking',
+                                    gateway_id: this.id,
+                                    action: 'initiate_sale'
+                                };
+
+                                // Add order data if available
+                                if (this.order) {
+                                    if (this.order.amount) ajaxData.amount = this.order.amount;
+                                    if (this.order.currency) ajaxData.currency = this.order.currency;
+                                }
+                                ajaxData.bank = bankName;
+                                console.log('Open Banking AJAX Data:', ajaxData);
+                                $.ajax({
+                                    url: ajaxUrl,
+                                    type: 'POST',
+                                    dataType: 'json',
+                                    data: ajaxData,
+                                    success: function(response) {
+                                        helper.unblockOnError();
+                                        // Remove form submission prevention
+                                        $('form').off('submit.open-banking');
+                                        if (response.success && response.redirect_url) {
+                                            // Create detail object with actual redirect URL from response
+                                            const detail = {
+                                                provider,
+                                                redirect_url: response.redirect_url,
+                                            };
+                                            // Dispatch the custom event with actual redirect URL
+                                            const merchantCustomEventProvideDetails = new CustomEvent(GlobalPayments.enums.ApmEvents.PaymentMethodActionDetail, {
+                                                detail: detail
+                                            });
+                                            window.dispatchEvent(merchantCustomEventProvideDetails);
+
+                                            console.log('Redirecting to:', response.redirect_url);
+
+                                        } else {
+                                            helper.showPaymentError(this.id, response.message || 'Payment processing failed');
+                                        }
+                                    }.bind(this),
+                                    error: function(xhr, error) {
+                                        helper.unblockOnError();
+
+                                        // Remove form submission prevention on error
+                                        $('form').off('submit.open-banking');
+
+                                        helper.showPaymentError(this.id, 'Payment processing failed. Please try again.');
+                                        console.error('Open Banking payment error:', error);
+                                        console.error('XHR Response:', xhr.responseText);
+                                    }.bind(this)
+                                });
+                        }
+                        break;
+                    default:
+                        detail = {
+                            "seconds_to_expire": "900",
+                            "next_action": "REDIRECT_IN_FRAME",
+                            "redirect_url": 'https://google.com/',
+                            provider,
+                        };
+                        break;
+                }
+                const merchantCustomEventProvideDetails = new CustomEvent(GlobalPayments.enums.ApmEvents.PaymentMethodActionDetail, {
+                    detail: detail
+                });
+                window.dispatchEvent(merchantCustomEventProvideDetails);
+                return 0;
+            });
+
             this.cardForm.on('submit', 'click', helper.blockOnSubmit.bind(this));
             this.cardForm.on('token-success', this.handleResponse.bind(this));
             this.cardForm.on('token-error', this.handleErrors.bind(this));
@@ -334,6 +587,24 @@
          */
         isThreeDSecureEnabled: function () {
             return this.gatewayOptions.enableThreeDSecure;
+        },
+
+        /**
+         * States whether the blik is enabled.
+         *
+         * @returns {Boolean}
+         */
+        isBlikPaymentEnabled: function () {
+            return this.gatewayOptions.enableBlikPayment;
+        },
+
+        /**
+         * States whether the open banking is enabled.
+         *
+         * @returns {Boolean}
+         */
+        isOpenBankingEnabled: function () {
+            return this.gatewayOptions.enableOpenBanking;
         },
 
         /**

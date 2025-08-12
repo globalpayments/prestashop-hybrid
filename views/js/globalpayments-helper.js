@@ -334,6 +334,20 @@
             }
             return true;
         },
+
+        /**
+         * Get AJAX URL for a specific controller
+         *
+         * @param {string} controller The controller name
+         * @returns {string} The AJAX URL
+         */
+        getAjaxUrl: function(controller) {
+            if (this.helperOptions.urls && this.helperOptions.urls[controller]) {
+                return this.helperOptions.urls[controller];
+            }
+            console.error('AJAX URL not found for controller:', controller);
+            return '';
+        },
     };
 
     if (!window.GlobalPaymentsHelper) {

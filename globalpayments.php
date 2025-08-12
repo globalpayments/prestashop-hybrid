@@ -99,7 +99,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '1.6.6';
+        $this->version = '1.7.0';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '1.7.5', 'max' => _PS_VERSION_];
@@ -502,6 +502,10 @@ class GlobalPayments extends PaymentModule
             $this->_path . '/views/js/admin/globalpayments-get-transaction-details.js'
         );
 
+        $this->context->controller->addJS(
+            $this->_path . '/views/js/admin/globalpayments-refund-validation.js'
+        );
+
         Media::addJsDef([
             'globalpayments_admin_params' => [
                 'credentialsCheckUrl' => $this->configForm->getCredentialsCheckUrl(),
@@ -539,6 +543,33 @@ class GlobalPayments extends PaymentModule
                 ],
             ],
         ]);
+
+        // Add order data for refund validation if we're on an order page
+        if (isset($_GET['id_order']) && Tools::getValue('controller') === 'AdminOrders') {
+            $orderId = (int) Tools::getValue('id_order');
+            $order = new Order($orderId);
+            
+            if ($order && $order->module === $this->name) {
+                // Get already refunded amount
+                $alreadyRefunded = 0.00;
+                $orderSlips = OrderSlip::getOrdersSlip($order->id_customer, $order->id);
+                foreach ($orderSlips as $slip) {
+                    $alreadyRefunded +=
+                        (float) $slip['total_products_tax_incl'] + (float) $slip['total_shipping_tax_incl'];
+                }
+                
+                Media::addJsDef([
+                    'globalpayments_order_data' => [
+                        'orderId' => $orderId,
+                        'orderModule' => $order->module,
+                        'orderTotal' => (float) $order->total_paid,
+                        'alreadyRefunded' => $alreadyRefunded,
+                        'remainingRefundable' => (float) $order->total_paid - $alreadyRefunded,
+                        'currency' => (new Currency($order->id_currency))->iso_code,
+                    ],
+                ]);
+            }
+        }
 
         if (isset($this->activePaymentMethods[GatewayId::GP_UCP])) {
             $this->context->controller->addCSS(
@@ -631,6 +662,14 @@ class GlobalPayments extends PaymentModule
                             'Modules.Globalpayments.Shop'
                         ),
                     ],
+                    'urls' => [
+                        'asyncPaymentMethodValidation' => $this->context->link->getModuleLink(
+                            $this->name,
+                            'asyncPaymentMethodValidation',
+                            [],
+                            true
+                        ),
+                    ],
                 ],
             ]
         );
@@ -663,7 +702,33 @@ class GlobalPayments extends PaymentModule
 
         $totalToBeRefunded += $shippingAmount;
 
-        $this->transactionManagement->processRefund($psOrder, $totalToBeRefunded);
+        // Early validation - if this fails, we should prevent the entire refund process
+        try {
+            $this->transactionManagement->validateRefundAmountOnly($psOrder, $totalToBeRefunded);
+        } catch (\Exception $e) {
+            // Log the validation error
+            PrestaShopLogger::addLog(
+                'GlobalPayments: Pre-validation failed - ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR
+            );
+
+            // This won't stop PrestaShop's order slip creation, but will prevent our refund processing
+            return;
+        }
+
+        try {
+            $this->transactionManagement->processRefund($psOrder, $totalToBeRefunded);
+        } catch (\Exception $e) {
+            // Ensure error is displayed on admin page
+            if (isset($this->context->controller)) {
+                $this->context->controller->errors[] = Tools::displayError($e->getMessage());
+            }
+            // Log the error for debugging
+            PrestaShopLogger::addLog(
+                'GlobalPayments Refund Hook Error (OrderSlipAdd): ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR
+            );
+        }
     }
 
     /**
@@ -713,7 +778,33 @@ class GlobalPayments extends PaymentModule
             $totalToBeRefunded += (float) $refundedProducts['shipping_amount'];
         }
 
-        $this->transactionManagement->processRefund($psOrder, $totalToBeRefunded);
+        // Early validation - if this fails, we should prevent the entire refund process
+        try {
+            $this->transactionManagement->validateRefundAmountOnly($psOrder, $totalToBeRefunded);
+        } catch (\Exception $e) {
+            // Log the validation error
+            PrestaShopLogger::addLog(
+                'GlobalPayments: Pre-validation failed - ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR
+            );
+
+            // This won't stop PrestaShop's order slip creation, but will prevent our refund processing
+            return;
+        }
+
+        try {
+            $this->transactionManagement->processRefund($psOrder, $totalToBeRefunded);
+        } catch (\Exception $e) {
+            // Ensure error is displayed on admin page
+            if (isset($this->context->controller)) {
+                $this->context->controller->errors[] = Tools::displayError($e->getMessage());
+            }
+            // Log the error for debugging
+            PrestaShopLogger::addLog(
+                'GlobalPayments Refund Hook Error (ProductCancel): ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR
+            );
+        }
     }
 
     /**

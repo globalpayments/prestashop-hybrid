@@ -167,6 +167,21 @@ abstract class AbstractGateway implements GatewayInterface
      */
     protected $translator;
 
+    /**
+     * States whether the Blik payment method should be enabled
+     *
+     * @var bool
+     */
+    public $enableBlikPayment;
+
+
+    /**
+     * States whether the Open Banking payment method should be enabled
+     *
+     * @var bool
+     */
+    public $enableOpenBanking;
+
     public function __construct()
     {
         $this->client = new SdkClient();
@@ -238,6 +253,15 @@ abstract class AbstractGateway implements GatewayInterface
         $this->txnDescriptor = \Configuration::get($this->id . '_txnDescriptor');
         $this->allowCardSaving = \Configuration::get($this->id . '_allowCardSaving') === '1';
         $this->sortOrder = \Configuration::get($this->id . '_sortOrder');
+        
+        // Only set Blik Payment and Open Banking if conditions are met
+        if ($this->isPolandWithPLNCurrency()) {
+            $this->enableBlikPayment = \Configuration::get($this->id . '_enableBlikPayment') === '1';
+            $this->enableOpenBanking = \Configuration::get($this->id . '_enableOpenBanking') === '1';
+        } else {
+            $this->enableBlikPayment = false;
+            $this->enableOpenBanking = false;
+        }
 
         foreach ($this->getGatewayFormFields() as $key => $options) {
             /**
@@ -260,12 +284,114 @@ abstract class AbstractGateway implements GatewayInterface
     }
 
     /**
+     * Check if the store is configured for Poland with PLN currency
+     *
+     * @return bool
+     */
+    private function isPolandWithPLNCurrency()
+    {
+        $country = new \Country((int) \Configuration::get('PS_COUNTRY_DEFAULT'));
+        $currency = new \Currency((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+        
+        return $country->iso_code === 'PL' && $currency->iso_code === 'PLN';
+    }
+
+    /**
      * Configures shared gateway options
      *
      * @return
      */
     public function initFormFields()
     {
+        $baseFields = [
+            $this->id . '_paymentAction' => [
+                'title' => $this->translator->trans('Payment Action', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'description' => $this->translator->trans(
+                    'Choose whether you wish to capture funds immediately or authorize payment only for a
+                     delayed capture.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => TransactionType::SALE,
+                'options' => [
+                    TransactionType::SALE => $this->translator->trans(
+                        'Authorize + Capture',
+                        [],
+                        'Modules.Globalpayments.Admin'
+                    ),
+                    TransactionType::AUTHORIZE => $this->translator->trans(
+                        'Authorize only',
+                        [],
+                        'Modules.Globalpayments.Admin'
+                    ),
+                ],
+            ],
+            $this->id . '_allowCardSaving' => [
+                'title' => $this->translator->trans(
+                    'Allow Card Saving',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Note: to use the card saving feature, you must have multi-use token
+                    support enabled on your account. Please contact
+                    <a href="mailto:%s%?Subject=PrestaShop%%20Allow%%20Card%%20Saving">support</a>
+                    with any questions regarding this option.',
+                    ['%s%' => $this->getFirstLineSupportEmail()],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ],
+            $this->id . '_txnDescriptor' => [
+                'title' => $this->translator->trans(
+                    'Order Transaction Descriptor',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'type' => 'text',
+                'maxLength' => '25',
+                'description' => $this->translator->trans(
+                    'During a Capture or Authorize payment action, this value will be passed along as the
+                    transaction-specific descriptor listed on the customer\'s bank account. Please contact
+                    <a href="mailto:%s?Subject=PrestaShop%%20Transaction%%20Descriptor%%20Option">
+                    support</a> with any questions regarding this option (maxLength: 25).',
+                    ['%s%' => $this->getFirstLineSupportEmail()],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => '',
+            ],
+            $this->id . '_sortOrder' => [
+                'title' => $this->translator->trans('Sort Order', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'text',
+                'default' => 0,
+            ],
+        ];
+
+        // Add Blik Payment and Open Banking fields only for Poland with PLN currency
+        if ($this->isPolandWithPLNCurrency()) {
+            $baseFields[$this->id . '_enableBlikPayment'] = [
+                'title' => $this->translator->trans('Enable Blik Payment', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable or disable Blik payment method.',
+                    [],
+                ),
+                'default' => 0,
+            ];
+            
+            $baseFields[$this->id . '_enableOpenBanking'] = [
+                'title' => $this->translator->trans('Enable Open Banking', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable or disable Open Banking method.',
+                    [],
+                ),
+                'default' => 0,
+            ];
+        }
+
         $this->formFields = array_merge(
             [
                 $this->id . '_enabled' => [
@@ -285,71 +411,7 @@ abstract class AbstractGateway implements GatewayInterface
                 ],
             ],
             $this->getGatewayFormFields(),
-            [
-                $this->id . '_paymentAction' => [
-                    'title' => $this->translator->trans('Payment Action', [], 'Modules.Globalpayments.Admin'),
-                    'type' => 'select',
-                    'description' => $this->translator->trans(
-                        'Choose whether you wish to capture funds immediately or authorize payment only for a
-                         delayed capture.',
-                        [],
-                        'Modules.Globalpayments.Admin'
-                    ),
-                    'default' => TransactionType::SALE,
-                    'options' => [
-                        TransactionType::SALE => $this->translator->trans(
-                            'Authorize + Capture',
-                            [],
-                            'Modules.Globalpayments.Admin'
-                        ),
-                        TransactionType::AUTHORIZE => $this->translator->trans(
-                            'Authorize only',
-                            [],
-                            'Modules.Globalpayments.Admin'
-                        ),
-                    ],
-                ],
-                $this->id . '_allowCardSaving' => [
-                    'title' => $this->translator->trans(
-                        'Allow Card Saving',
-                        [],
-                        'Modules.Globalpayments.Admin'
-                    ),
-                    'type' => 'switch',
-                    'description' => $this->translator->trans(
-                        'Note: to use the card saving feature, you must have multi-use token
-                        support enabled on your account. Please contact
-                        <a href="mailto:%s%?Subject=PrestaShop%%20Allow%%20Card%%20Saving">support</a>
-                        with any questions regarding this option.',
-                        ['%s%' => $this->getFirstLineSupportEmail()],
-                        'Modules.Globalpayments.Admin'
-                    ),
-                    'default' => 0,
-                ],
-                $this->id . '_txnDescriptor' => [
-                    'title' => $this->translator->trans(
-                        'Order Transaction Descriptor',
-                        [],
-                        'Modules.Globalpayments.Admin'
-                    ),
-                    'type' => 'text',
-                    'maxLength' => '25',
-                    'description' => $this->translator->trans(
-                        'During a Capture or Authorize payment action, this value will be passed along as the
-                        transaction-specific descriptor listed on the customer\'s bank account. Please contact
-                        <a href="mailto:%s?Subject=PrestaShop%%20Transaction%%20Descriptor%%20Option">
-                        support</a> with any questions regarding this option (maxLength: 25).',
-                        ['%s%' => $this->getFirstLineSupportEmail()],
-                        'Modules.Globalpayments.Admin'
-                    ),
-                    'default' => '',
-                ],
-                $this->id . '_sortOrder' => [
-                    'title' => $this->translator->trans('Sort Order', [], 'Modules.Globalpayments.Admin'),
-                    'type' => 'text',
-                    'default' => 0,
-                ],
-            ]
+            $baseFields
         );
     }
 
@@ -949,7 +1011,11 @@ abstract class AbstractGateway implements GatewayInterface
             'globalpayments-secure-payment-fields-lib',
             'https://js.globalpay.com/' . Utils::getJsLibVersion() . '/globalpayments'
                 . (defined('_PS_MODE_DEV_') && _PS_MODE_DEV_ ? '' : '.min') . '.js',
-            ['server' => 'remote']
+            [
+                'server' => 'remote',
+                'position' => 'head',
+                'priority' => 0
+            ]
         );
 
         $module->getContext()->controller->registerJavascript(
@@ -992,6 +1058,7 @@ abstract class AbstractGateway implements GatewayInterface
             'id' => $this->id,
             'allowCardSaving' => !$customer->is_guest && $this->allowCardSaving && $isCheckout,
             'envIndicator' => $this->environmentIndicatorActive(),
+            'enableBlikPayment' => $this->enableBlikPayment,
         ]);
 
         $paymentOption = new PaymentOption();

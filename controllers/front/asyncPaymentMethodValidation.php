@@ -18,6 +18,7 @@ use GlobalPayments\PaymentGatewayProvider\Data\Order as OrderModel;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethodFactory;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\AsyncPaymentMethodInterface;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\AddressHelper;
+use GlobalPayments\PaymentGatewayProvider\Gateways\DiUiApms\{BankSelect, Blik};
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\CheckoutHelper;
 use GlobalPayments\PaymentGatewayProvider\Platform\OrderStateInstaller;
 use GlobalPayments\PaymentGatewayProvider\Platform\TransactionManagement;
@@ -85,11 +86,69 @@ class GlobalPaymentsAsyncPaymentMethodValidationModuleFrontController extends Mo
      */
     public function postProcess()
     {
+        // Debug: Log that we've entered this method
+        file_put_contents(
+            __DIR__ . '/debug_controller.log', date('Y-m-d H:i:s') . " - postProcess() called\n", FILE_APPEND
+        );
+
         $cart = $this->context->cart;
         $customerId = $cart->id_customer ?? null;
         $customer = new Customer($customerId);
 
+        // Initialize helpers early for both BLIK and regular payments
+        $this->addressHelper = new AddressHelper();
         $this->checkoutHelper = new CheckoutHelper($this->module, $cart);
+
+        // Handle Blik payment method specifically first, before validation
+        $paymentMethod = Tools::getValue('payment_method'); // For Blik requests
+        $gatewayId = Tools::getValue('gateway_id'); // For Blik requests
+
+        $bank = Tools::getValue('bank'); // for  open banking request
+        // Debug: Log BLIK request parameters
+        file_put_contents(__DIR__ . '/debug_controller.log',
+            date('Y-m-d H:i:s') . " - payment_method: '$paymentMethod', gateway_id: '$gatewayId'\n",
+            FILE_APPEND
+        );
+
+        if ($paymentMethod === 'blik' && !empty($gatewayId)) {
+            error_log('DEBUG: BLIK condition matched! Processing BLIK payment');
+            file_put_contents(__DIR__ . '/debug_controller.log',
+                date('Y-m-d H:i:s') . " - BLIK condition matched!\n",
+                FILE_APPEND
+            );
+
+            // Validate cart for BLIK payment
+            if (empty($cart->id) || !Validate::isLoadedObject($cart)) {
+                header('Content-Type: application/json');
+                die(json_encode([
+                    'success' => false,
+                    'message' => 'Invalid cart. Please refresh the page and try again.'
+                ]));
+            }
+
+            return $this->processBlikPayment($cart, $this->context->currency, $gatewayId, $customer);
+        }
+
+        if ($paymentMethod === 'open_banking' && !empty($gatewayId)) {
+            error_log('DEBUG: Open Banking condition matched! Processing Open Banking payment');
+            file_put_contents(__DIR__ . '/debug_controller.log',
+                date('Y-m-d H:i:s') . " - Open Banking condition matched!\n",
+                FILE_APPEND
+            );
+
+            // Validate cart for Open Banking payment
+            if (empty($cart->id) || !Validate::isLoadedObject($cart)) {
+                header('Content-Type: application/json');
+                die(json_encode([
+                    'success' => false,
+                    'message' => 'Invalid cart. Please refresh the page and try again.'
+                ]));
+            }
+
+            return $this->processOpenBankingPayment($cart, $this->context->currency, $gatewayId, $customer,$bank);
+        }
+
+        // Regular checkout validation for non-BLIK payments
         $this->checkoutHelper->validate();
 
         $this->addressHelper = new AddressHelper();
@@ -125,18 +184,6 @@ class GlobalPaymentsAsyncPaymentMethodValidationModuleFrontController extends Mo
 
             $orderId = $this->module->currentOrder;
             $this->checkoutHelper->restoreCart($orderId);
-
-            $order = $this->order->generateOrder(
-                [
-                    'amount' => $total,
-                    'cartId' => $cart->id,
-                    'billingAddress' => $billingAddress,
-                    'currency' => $currency->iso_code,
-                    'gatewayProviderId' => $paymentMethodId,
-                    'orderId' => (string) $orderId,
-                    'shippingAddress' => $shippingAddress,
-                ]
-            );
 
             $transaction = $paymentMethod->processPayment($order);
             $transactionId = $transaction->transactionReference->transactionId;
@@ -175,6 +222,130 @@ class GlobalPaymentsAsyncPaymentMethodValidationModuleFrontController extends Mo
                 '',
                 $e->getMessage()
             );
+        }
+    }
+
+    /**
+     * Process Open Banking payment specifically
+     *
+     * @param Cart $cart
+     * @param Currency $currency
+     * @param string $gatewayId
+     * @param Customer $customer
+     */
+    private function processBlikPayment($cart, $currency, $gatewayId, $customer)
+    {
+        try {
+            // Get the gateway to process Open Banking payment
+            $gateway = $this->paymentMethodFactory->create($gatewayId);
+            $total = (float) $cart->getOrderTotal(true, Cart::BOTH);
+            $orderState = Configuration::get(OrderStateInstaller::PAYMENT_WAITING);
+
+            // Create the order
+            $this->module->validateOrder(
+                (int) $cart->id,
+                (int) $orderState,
+                $total,
+                'Blik Payment',
+                '',
+                [],
+                (int) $currency->id,
+                false,
+                $customer->secure_key
+            );
+
+            $orderId = $this->module->currentOrder;
+            $this->checkoutHelper->restoreCart($orderId);
+
+            // Generate order object for the gateway
+
+            // Process the Blik sale transaction using GlobalPayments SDK
+            $blikResult = Blik::processBlikSale($gateway, $orderId);
+
+            if ($blikResult['result'] === 'success') {
+                // Return success response with redirect URL
+                header('Content-Type: application/json');
+                die(json_encode([
+                    'success' => true,
+                    'redirect_url' => $blikResult['redirect'],
+                    'order_id' => $orderId
+                ]));
+            } else {
+                throw new Exception('BLIK payment processing failed');
+            }
+
+        } catch (GatewayException $e) {
+            header('Content-Type: application/json');
+            die(json_encode([
+                'success' => false,
+                'message' => $this->utils->mapResponseCodeToFriendlyMessage()
+            ]));
+        } catch (Exception $e) {
+            header('Content-Type: application/json');
+            die(json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]));
+        }
+    }
+
+    /**
+     * Process Open Banking payment specifically
+     *
+     * @param Cart $cart
+     * @param Currency $currency
+     * @param string $gatewayId
+     * @param Customer $customer
+     */
+    private function processOpenBankingPayment($cart, $currency, $gatewayId, $customer,$bank)
+    {
+        try {// Get the gateway to process Open Banking payment
+            $gateway = $this->paymentMethodFactory->create($gatewayId);
+            $total = (float) $cart->getOrderTotal(true, Cart::BOTH);
+            $orderState = Configuration::get(OrderStateInstaller::PAYMENT_WAITING);
+
+            // Create the order
+            $this->module->validateOrder(
+                (int) $cart->id,
+                (int) $orderState,
+                $total,
+                'Open Banking Payment',
+                '',
+                [],
+                (int) $currency->id,
+                false,
+                $customer->secure_key
+            );
+
+            $orderId = $this->module->currentOrder;
+            $this->checkoutHelper->restoreCart($orderId);
+
+            // Process the Open Banking sale transaction using GlobalPayments SDK
+            $openBankingResult = BankSelect::processOpenBankingSale($gateway, $orderId,$bank);
+            if ($openBankingResult['result'] === 'success') {
+                // Return success response with redirect URL
+                header('Content-Type: application/json');
+                die(json_encode([
+                    'success' => true,
+                    'redirect_url' => $openBankingResult['redirect'],
+                    'order_id' => $orderId
+                ]));
+            } else {
+                throw new Exception('Open Banking payment processing failed');
+            }
+
+        } catch (GatewayException $e) {
+            header('Content-Type: application/json');
+            die(json_encode([
+                'success' => false,
+                'message' => $this->utils->mapResponseCodeToFriendlyMessage()
+            ]));
+        } catch (Exception $e) {
+            header('Content-Type: application/json');
+            die(json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]));
         }
     }
 }

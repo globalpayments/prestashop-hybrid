@@ -316,6 +316,19 @@ class TransactionManagement
      */
     public function processRefund($psOrder, $amount)
     {
+        // Validate refund amount before processing
+        try {
+            $this->validateRefundAmount($psOrder, $amount);
+        } catch (\Exception $e) {
+            // Display error on admin page and stop processing
+            $this->context->controller->errors[] = \Tools::displayError($e->getMessage());
+            \PrestaShopLogger::addLog(
+                'GlobalPayments Refund Error: ' . $e->getMessage(),
+                \PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR
+            );
+            return; // Stop processing further
+        }
+
         $currency = new \Currency($psOrder->id_currency);
         $orderId = (int) $psOrder->id;
 
@@ -345,6 +358,9 @@ class TransactionManagement
                         $response->transactionReference->transactionId,
                         1
                     );
+
+                    // Update order status to refunded after successful refund
+                    $this->updateOrderStatusAfterRefund($psOrder, $amount);
                 }
             } catch (\Exception $e) {
                 $this->transactionHistory->saveResult(
@@ -370,5 +386,148 @@ class TransactionManagement
     public function waitingForPayment($psOrder)
     {
         return (int) $psOrder->getCurrentState() === (int) \Configuration::get(OrderStateInstaller::PAYMENT_WAITING);
+    }
+
+    /**
+     * Validate if the refund amount is valid (less than or equal to the original order amount)
+     *
+     * @param \Order $psOrder
+     * @param float $totalToBeRefunded
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    private function validateRefundAmount($psOrder, $totalToBeRefunded)
+    {
+        // Get the total amount of the original order
+        $originalOrderAmount = (float) $psOrder->total_paid;
+
+        // Get the total amount already refunded for this order
+        $totalAlreadyRefunded = 0.00;
+        $orderSlips = \OrderSlip::getOrdersSlip($psOrder->id_customer, $psOrder->id);
+
+        foreach ($orderSlips as $slip) {
+            $totalAlreadyRefunded += (float) $slip['total_products_tax_incl'] + (float) $slip['total_shipping_tax_incl'];
+        }
+
+        // Calculate the remaining refundable amount
+        $remainingRefundableAmount = $originalOrderAmount - $totalAlreadyRefunded;
+
+        // Validate that current refund amount doesn't exceed remaining refundable amount
+        if ($totalToBeRefunded > $remainingRefundableAmount) {
+            $errorMessage = sprintf(
+                'Refund validation failed for Order #%d. Total refund amount (%.2f) exceeds original order amount (%.2f). Already refunded: %.2f, Current refund: %.2f',
+                $psOrder->id,
+                ($totalAlreadyRefunded + $totalToBeRefunded),
+                $originalOrderAmount,
+                $totalAlreadyRefunded,
+                $totalToBeRefunded
+            );
+
+            // Log the detailed error for admin/debugging
+            \PrestaShopLogger::addLog(
+                'GlobalPayments: ' . $errorMessage,
+                \PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR
+            );
+
+            // Throw user-friendly exception to stop processing
+            $userErrorMessage = sprintf(
+                'Cannot process refund: The refund amount (%.2f %s) exceeds the remaining refundable amount (%.2f %s) for this order.',
+                $totalToBeRefunded,
+                (new \Currency($psOrder->id_currency))->iso_code,
+                $remainingRefundableAmount,
+                (new \Currency($psOrder->id_currency))->iso_code
+            );
+
+            throw new \Exception($userErrorMessage);
+        }
+
+        // Additional validation: Check if refund amount is positive
+        if ($totalToBeRefunded <= 0) {
+            throw new \Exception('Refund amount must be greater than zero.');
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate refund amount only (without processing) - used for early validation
+     *
+     * @param \Order $psOrder
+     * @param float $totalToBeRefunded
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function validateRefundAmountOnly($psOrder, $totalToBeRefunded)
+    {
+        return $this->validateRefundAmount($psOrder, $totalToBeRefunded);
+    }
+
+    /**
+     * Update order status after successful refund
+     *
+     * @param \Order $psOrder
+     * @param float $refundAmount
+     *
+     * @return void
+     *
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    private function updateOrderStatusAfterRefund($psOrder, $refundAmount)
+    {
+        // Get the total amount of the original order
+        $originalOrderAmount = (float) $psOrder->total_paid;
+
+        // Get the total amount already refunded for this order (including current refund)
+        $totalAlreadyRefunded = 0.00;
+        $orderSlips = \OrderSlip::getOrdersSlip($psOrder->id_customer, $psOrder->id);
+
+        foreach ($orderSlips as $slip) {
+            $totalAlreadyRefunded += (float) $slip['total_products_tax_incl'] + (float) $slip['total_shipping_tax_incl'];
+        }
+
+        // Add current refund amount
+        $totalRefunded = $totalAlreadyRefunded + $refundAmount;
+
+        // Determine appropriate order status
+        $newOrderStatus = null;
+
+        if ($totalRefunded >= $originalOrderAmount) {
+            // Full refund - set to refunded status
+            $newOrderStatus = \Configuration::get('PS_OS_REFUND');
+        } else {
+            // Partial refund - set to partial refund status (if available)
+            $partialRefundStatus = \Configuration::get('PS_OS_PARTIAL_REFUND');
+            if ($partialRefundStatus) {
+                $newOrderStatus = $partialRefundStatus;
+            } else {
+                // Fallback to refunded status if partial refund status doesn't exist
+                $newOrderStatus = \Configuration::get('PS_OS_REFUND');
+            }
+        }
+
+        // Update order status if we have a valid status
+        if ($newOrderStatus) {
+            $this->orderStateHelper->changeOrderState(
+                $psOrder->id,
+                $this->context->employee->id ?? 0,
+                $newOrderStatus
+            );
+
+            // Log the status change
+            \PrestaShopLogger::addLog(
+                sprintf(
+                    'GlobalPayments: Order #%d status updated to %s after refund of %.2f (Total refunded: %.2f/%.2f)',
+                    $psOrder->id,
+                    $newOrderStatus,
+                    $refundAmount,
+                    $totalRefunded,
+                    $originalOrderAmount
+                ),
+                \PrestaShopLogger::LOG_SEVERITY_LEVEL_INFORMATIVE
+            );
+        }
     }
 }

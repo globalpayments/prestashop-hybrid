@@ -14,11 +14,6 @@
 
 <form action="{$action|escape:'html':'UTF-8'}" class="{$id|escape:'html':'UTF-8'}-payment-form globalpayments-payment-form" id="{$id|escape:'html':'UTF-8'}-payment-form" method="post">
     <input type="hidden" name="payment-method-id" value="{$id|escape:'htmlall':'UTF-8'}" />
-    {if $envIndicator}
-        <div class="globalpayments-sandbox-warning">
-            {l s='This page is currently in sandbox/test mode. Do not use real/active card numbers.' d='Modules.Globalpayments.Shop'}
-        </div>
-    {/if}
     {foreach from=$formData item=formItem}
         <div class="globalpayments {$id|escape:'html':'UTF-8'} {$formItem['class']|escape:'html':'UTF-8'}">
             <label for="{$id|escape:'html':'UTF-8'}-{$formItem['class']|escape:'html':'UTF-8'}">

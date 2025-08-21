@@ -25,10 +25,16 @@ class GetAccessTokenRequest extends AbstractRequest
 {
     public function __construct(Order $order, $config)
     {
+        // to check request is from Admin or User(frontend)
         parent::__construct($order, $config);
-        $this->data[RequestArg::SERVICES_CONFIG]['permissions'] = [
+        if($_POST) {
+            $this->data[RequestArg::SERVICES_CONFIG]['permissions'] = [
+            '',
+        ]; } else {
+            $this->data[RequestArg::SERVICES_CONFIG]['permissions'] = [
             'PMT_POST_Create_Single',
-        ];
+			];
+        }
     }
 
     public function getTransactionType()

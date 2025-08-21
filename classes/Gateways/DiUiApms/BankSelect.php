@@ -1,7 +1,6 @@
 <?php
-
 namespace GlobalPayments\PaymentGatewayProvider\Gateways\DiUiApms;
-
+if (!defined('_PS_VERSION_')) { exit; }
 use GlobalPayments\Api\Entities\Enums\{
     AlternativePaymentType,
     Environment,
@@ -123,6 +122,20 @@ class BankSelect
             $orderPayment->conversion_rate = 1;
             $orderPayment->date_add = date('Y-m-d H:i:s');
             $orderPayment->add();
+        }
+
+        // Set order state to generic 'Waiting for payment' (if available)
+        $waitingPaymentStateId = null;
+        // Try to find a generic 'Waiting for payment' state
+        $states = \OrderState::getOrderStates((int)\Context::getContext()->language->id);
+        foreach ($states as $state) {
+            if (stripos($state['name'], 'Waiting for payment') !== false) {
+                $waitingPaymentStateId = $state['id_order_state'];
+                break;
+            }
+        }
+        if ($waitingPaymentStateId) {
+            $order->setCurrentState($waitingPaymentStateId);
         }
 
         // Use PrestaShop's built-in helpers for transaction management
@@ -406,6 +419,17 @@ class BankSelect
                             'GlobalPayments'
                         );
 
+                        // Update order status to cancelled (even if not pending)
+                        if ($order->getCurrentState() != \Configuration::get('PS_OS_CANCELED')) {
+                            $order->setCurrentState(\Configuration::get('PS_OS_CANCELED'));
+                            \PrestaShopLogger::addLog(
+                                'Open Banking payment declined - Order status updated to Cancelled - Order ID: ' . $order->id,
+                                1,
+                                null,
+                                'GlobalPayments'
+                            );
+                        }
+
                         // Get transaction ID from order payments
                         $transactionId = null;
                         $orderPayments = \OrderPayment::getByOrderReference($order->reference);
@@ -428,14 +452,6 @@ class BankSelect
                                     0, // failure
                                     'Open Banking Payment Declined' // result message
                                 );
-
-                                \PrestaShopLogger::addLog(
-                                    'Open Banking transaction history added for DECLINED status - Order ID: ' . 
-                                    $order->id . ', Transaction ID: ' . $transactionId,
-                                    2, // LOG_SEVERITY_LEVEL_WARNING
-                                    null,
-                                    'GlobalPayments'
-                                );
                             } catch (\Exception $e) {
                                 \PrestaShopLogger::addLog(
                                     'Error adding Open Banking transaction history: ' . $e->getMessage() . 
@@ -449,8 +465,9 @@ class BankSelect
 
                         // For DECLINED status, redirect to cart page without clearing cart
                         \PrestaShopLogger::addLog(
-                            'Open Banking payment declined - redirecting to cart page without clearing cart - ' . 
-                            'Order ID: ' . $order->id,
+                            'Open Banking payment declined (order cancelled, transaction history updated, user redirected to cart) - '
+                            . 'Order ID: ' . $order->id
+                            . (isset($transactionId) ? ', Transaction ID: ' . $transactionId : ''),
                             2,
                             null,
                             'GlobalPayments'

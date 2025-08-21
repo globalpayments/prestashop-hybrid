@@ -94,8 +94,16 @@ class OrderStateInstaller
      *
      * @return array
      */
-    private function getPaymentMessages()
+    private function getPaymentMessages($paymentMethod = null)
     {
+        // For BLIK or Open Banking, use generic message
+        if (in_array(strtoupper((string)$paymentMethod), ['BLIK', 'OB', 'PAYU', 'BANKSELECT'])) {
+            return [
+                'en' => 'Waiting for payment',
+                'fr' => 'En attente du paiement',
+            ];
+        }
+        // Default
         return [
             'en' => 'Waiting for GlobalPayments payment',
             'fr' => 'En attente du paiement GlobalPayments',
@@ -157,7 +165,6 @@ class OrderStateInstaller
                     break;
             }
         }
-
         return $orderState;
     }
 

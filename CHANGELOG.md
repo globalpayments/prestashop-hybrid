@@ -4,7 +4,11 @@
 
 # Changelog
 
-## Latest Version - ## v1.7.0 (08/12/25)
+## Latest Version - ## v1.7.1 (08/21/25)
+- Added Account name mandetory Enhancement
+- Improved Order Status Behavior | UI Improvement & Behaviour on checkout page
+
+## v1.7.0 (08/12/25)
 - Added DiUI-based APMs: Blik & Bank Select (Poland-only APMs)
 
 ## v1.6.6 (04/24/25)

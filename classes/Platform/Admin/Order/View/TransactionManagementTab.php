@@ -97,12 +97,10 @@ class TransactionManagementTab
         $orderPayment = \OrderPayment::getByOrderReference($this->order->reference)[0];
         $transactionId = $orderPayment->transaction_id;
 
-        $paymentOptions = $this->module->hookPaymentOptions(
-            [
-                'customerId' => $this->order->id_customer,
-                'formAction' => $payOrderAction,
-            ]
-        );
+        $paymentOptions = $this->module->hookPaymentOptions([
+            'customerId' => $this->order->id_customer,
+            'formAction' => $payOrderAction,
+        ]);
         $ucpOptions = [];
         foreach ($paymentOptions as $paymentOption) {
             if ($paymentOption->getModuleName() === GatewayId::GP_UCP) {
@@ -115,6 +113,16 @@ class TransactionManagementTab
             && $this->transactionManagement->waitingForPayment($this->order);
 
         $displayMgmTab = $canCapture || $waitingPayment;
+
+        // Determine transaction history title based on payment method
+        $transaction_history_title = $this->module->l('Global Payments Transaction Management History', 'admin_order');
+        $paymentMethodName = '';
+        if (!empty($orderPayment->payment_method)) {
+            $paymentMethodName = strtoupper($orderPayment->payment_method);
+        }
+        if (in_array($paymentMethodName, ['BLIK', 'OB', 'PAYU', 'BANKSELECT'])) {
+            $transaction_history_title = $this->module->l('Transaction Management History', 'admin_order');
+        }
 
         $this->context->smarty->assign([
             'adminLink' => $link,
@@ -130,6 +138,7 @@ class TransactionManagementTab
             'transactionId' => $transactionId,
             'ucpOptions' => $ucpOptions,
             'waitingPayment' => $waitingPayment,
+            'transaction_history_title' => $transaction_history_title,
         ]);
     }
 

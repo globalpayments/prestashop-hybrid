@@ -168,9 +168,12 @@
              let apmsEnabled = (acceptBlik || acceptOpenBanking) ? true : false;
 
              if (apmsEnabled) {
+                // Use baseCurrency/baseCountry from gatewayOptions, fallback to PLN/PL
+                var baseCurrency = this.gatewayOptions.baseCurrency || 'PLN';
+                var baseCountry = this.gatewayOptions.baseCountry || 'PL';
                 gatewayConfig.apms = {
-                    currencyCode: this.order.currency,
-                    countryCode: this.order.billingAddress.countryCode,
+                    currencyCode: baseCurrency,
+                    countryCode: baseCountry,
                     allowedCardNetworks: [
                         GlobalPayments.enums.CardNetwork.Visa,
                         GlobalPayments.enums.CardNetwork.Mastercard,
@@ -418,7 +421,7 @@
                 const merchantCustomEventProvideDetails = new CustomEvent(GlobalPayments.enums.ApmEvents.PaymentMethodActionDetail, {
                     detail: detail
                 });
-                window.dispatchEvent(merchantCustomEventProvideDetails);
+                if (!bankName) window.dispatchEvent(merchantCustomEventProvideDetails);
                 return 0;
             });
 

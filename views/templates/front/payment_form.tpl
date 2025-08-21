@@ -18,7 +18,7 @@
         <div class="globalpayments {$id|escape:'html':'UTF-8'} {$formItem['class']|escape:'html':'UTF-8'}">
             <label for="{$id|escape:'html':'UTF-8'}-{$formItem['class']|escape:'html':'UTF-8'}">
                 {$formItem['label']|escape:'html':'UTF-8'}
-                <span class="required"> *</span>
+                {if false}<span class="required"> *</span>{/if}
             </label>
             <div id="{$id|escape:'html':'UTF-8'}-{$formItem['class']|escape:'html':'UTF-8'}"></div>
             <ul class="globalpayments-validation-error" style="display: none;">

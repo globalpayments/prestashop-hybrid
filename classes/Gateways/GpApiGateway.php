@@ -242,16 +242,26 @@ class GpApiGateway extends AbstractGateway
                 'default' => '',
             ],
             $this->id . '_sandboxAccountName' => [
-                'title' => $this->translator->trans('Sandbox Account Name', [], 'Modules.Globalpayments.Admin'),
-                'type' => 'text',
-                'class' => 'sandbox-toggle',
+                'type' => 'hidden',
                 'default' => '',
+            ],
+            $this->id . '_sandboxAccountNameDropdown' => [
+                'title' => $this->translator->trans('Sandbox Account Name', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'class' => 'required sandbox-toggle',
+                'default' => 'Select Account',
                 'description' => $this->translator->trans(
-                    'Specify which account to use when processing a transaction.
-                     Default account will be used if this is not specified.',
+                    'Select which account to use when processing a transaction. Default account will be used if this is not specified.',
                     [],
                     'Modules.Globalpayments.Admin'
-                ),
+                ) . '<br>' . $this->translator->trans(
+                    'For assistance locating your account name, please contact our',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ) . ' <a href="https://developer.globalpay.com/support/integration-support" target="_blank">' . 
+                $this->translator->trans('Integration Support', [], 'Modules.Globalpayments.Admin') . 
+                '</a> ' . $this->translator->trans('Team based on location.', [], 'Modules.Globalpayments.Admin'),
+                'skipConfigSave' => true,
             ],
             $this->id . '_appId' => [
                 'title' => $this->translator->trans('Live App Id', [], 'Modules.Globalpayments.Admin'),
@@ -268,16 +278,26 @@ class GpApiGateway extends AbstractGateway
                 'default' => '',
             ],
             $this->id . '_accountName' => [
-                'title' => $this->translator->trans('Account Name', [], 'Modules.Globalpayments.Admin'),
-                'type' => 'text',
-                'class' => 'live-toggle',
+                'type' => 'hidden',
                 'default' => '',
+            ],
+            $this->id . '_accountNameDropdown' => [
+                'title' => $this->translator->trans('Account Name', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'class' => 'required live-toggle',
+                'default' => 'Select Account',
                 'description' => $this->translator->trans(
-                    'Specify which account to use when processing a transaction.
-                     Default account will be used if this is not specified.',
+                    'Select which account to use when processing a transaction. Default account will be used if this is not specified.',
                     [],
                     'Modules.Globalpayments.Admin'
-                ),
+                ) . '<br>' . $this->translator->trans(
+                    'For assistance locating your account name, please contact our',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ) . ' <a href="https://developer.globalpay.com/support/integration-support" target="_blank">' . 
+                $this->translator->trans('Integration Support', [], 'Modules.Globalpayments.Admin') . 
+                '</a> ' . $this->translator->trans('Team based on location.', [], 'Modules.Globalpayments.Admin'),
+                'skipConfigSave' => true,
             ],
             $this->id . '_credentialsCheck' => [
                 'title' => $this->translator->trans('Credentials Check', [], 'Modules.Globalpayments.Admin'),

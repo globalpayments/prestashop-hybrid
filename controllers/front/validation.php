@@ -107,6 +107,13 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
             $total = (float) $cart->getOrderTotal(true, Cart::BOTH);
             $orderState = $this->orderStateHelper->getOrderState($paymentMethod->paymentAction);
 
+            // Force generic 'Waiting for payment' state for BLIK and Open Banking
+            $blikMethodIds = ['blik'];
+            $openBankingMethodIds = ['ob'];
+            if (in_array(strtolower($paymentMethodId), $blikMethodIds) || in_array(strtolower($paymentMethodId), $openBankingMethodIds)) {
+                $orderState = (int) \Configuration::get('PS_OS_PAYMENT');
+            }
+
             $order = $this->order->generateOrder(
                 [
                     'amount' => $total,

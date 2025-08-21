@@ -132,7 +132,7 @@
 <div class="card panel mt-2" id="globalPaymentsTransactionHistory">
     <div class="panel-heading card-header">
         <i class="icon-money"></i>
-        {l s='Global Payments Transaction Management History' d='Modules.Globalpayments.Admin'}
+        {$transaction_history_title|escape:'htmlall':'UTF-8'}
     </div>
     <div class="card-body">
         <table class="table">

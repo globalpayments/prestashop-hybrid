@@ -60,6 +60,7 @@ class ConfigurationController extends FrameworkBundleAdminController
                         'Your credentials were successfully confirmed!',
                         'Modules.Globalpayments.Admin'
                     ),
+                    'accountName' => $gatewayResponse->accounts
                 ]);
             } else {
                 $response->setData([

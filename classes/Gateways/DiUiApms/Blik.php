@@ -1,7 +1,6 @@
 <?php
-
 namespace GlobalPayments\PaymentGatewayProvider\Gateways\DiUiApms;
-
+if (!defined('_PS_VERSION_')) { exit; }
 use GlobalPayments\Api\Entities\Enums\{
     AlternativePaymentType,
     Environment,
@@ -128,6 +127,20 @@ class Blik
             $orderPayment->add();
         }
 
+        // Set order state to generic 'Waiting for payment' (if available)
+        $waitingPaymentStateId = null;
+        // Try to find a generic 'Waiting for payment' state
+        $states = \OrderState::getOrderStates((int)\Context::getContext()->language->id);
+        foreach ($states as $state) {
+            if (stripos($state['name'], 'Waiting for payment') !== false) {
+                $waitingPaymentStateId = $state['id_order_state'];
+                break;
+            }
+        }
+        if ($waitingPaymentStateId) {
+            $order->setCurrentState($waitingPaymentStateId);
+        }
+
         // Use PrestaShop's built-in helpers for transaction management
         $module = \GlobalPayments::getModuleInstance();
         $transactionManagement = new TransactionManagement($module);
@@ -183,7 +196,8 @@ class Blik
         }
 
         \PrestaShopLogger::addLog(
-            'BLIK status notification data: ' . print_r($request_data, true),
+            'BLIK status notification data: ' .
+            print_r($request_data, true),
             1,
             null,
             'GlobalPayments'
@@ -195,7 +209,7 @@ class Blik
         $reference = self::extractReference($request_data);
 
         \PrestaShopLogger::addLog(
-            'BLIK status - Transaction ID: ' . $transaction_id . 
+            'BLIK status - Transaction ID: ' . $transaction_id .
             ', Status: ' . $payment_status . ', Reference: ' . $reference,
             1,
             null,
@@ -210,7 +224,8 @@ class Blik
 
             if ($order_id) {
                 \PrestaShopLogger::addLog(
-                    'BLIK status - Extracted order ID: ' . $order_id . ' from reference: ' . $reference,
+                    'BLIK status - Extracted order ID: ' . $order_id .
+                    ' from reference: ' . $reference,
                     1,
                     null,
                     'GlobalPayments'
@@ -390,12 +405,23 @@ class Blik
                     if (strtoupper($status) === 'DECLINED') {
                         // Log current order state for debugging
                         \PrestaShopLogger::addLog(
-                            'BLIK DECLINED - Current order state: ' . $order->getCurrentState() . 
+                            'BLIK DECLINED - Current order state: ' . $order->getCurrentState() .
                             ' - Order ID: ' . $order->id,
                             1,
                             null,
                             'GlobalPayments'
                         );
+
+                        // Update order status to cancelled (even if not pending)
+                        if ($order->getCurrentState() != \Configuration::get('PS_OS_CANCELED')) {
+                            $order->setCurrentState(\Configuration::get('PS_OS_CANCELED'));
+                            \PrestaShopLogger::addLog(
+                                'BLIK payment declined - Order status updated to Cancelled - Order ID: ' . $order->id,
+                                1,
+                                null,
+                                'GlobalPayments'
+                            );
+                        }
 
                         // Get transaction ID from order payments
                         $transaction_id = null;
@@ -419,15 +445,6 @@ class Blik
                                     0, // failure
                                     'BLIK Payment Declined' // result message
                                 );
-
-                                \PrestaShopLogger::addLog(
-                                    'BLIK transaction history added for DECLINED status - Order ID: ' . $order->id . 
-                                    ', Transaction ID: ' . $transaction_id,
-                                    2, // LOG_SEVERITY_LEVEL_WARNING
-                                    null,
-                                    'GlobalPayments'
-                                );
-
                             } catch (\Exception $e) {
                                 \PrestaShopLogger::addLog(
                                     'Error adding BLIK transaction history: ' . $e->getMessage() . 
@@ -441,8 +458,9 @@ class Blik
 
                         // For DECLINED status, redirect to cart page without clearing cart
                         \PrestaShopLogger::addLog(
-                            'BLIK payment declined - redirecting to cart page without clearing cart - Order ID: ' . 
-                            $order->id,
+                            'BLIK payment declined (order cancelled, transaction history updated, user redirected to cart) - '
+                            . 'Order ID: ' . $order->id
+                            . (isset($transaction_id) ? ', Transaction ID: ' . $transaction_id : ''),
                             2,
                             null,
                             'GlobalPayments'
@@ -515,7 +533,7 @@ class Blik
      */
     private static function extractTransactionId($data)
     {
-        // Your callback structure: {"id": "TRN_sZGlrL8M7fJy0YlouMFTnqiubJmpsS_hop_Order_28", ...}
+        // Your callback structure: {"id": "TRN_....", ...}
         $possible_fields = ['id', 'transaction_id', 'reference'];
 
         foreach ($possible_fields as $field) {
@@ -549,7 +567,7 @@ class Blik
      */
     private static function extractReference($data)
     {
-        // Your callback structure: {"reference": "202412191212769", ...}
+        // Your callback structure: {"reference": "....", ...}
         if (isset($data['reference']) && !empty($data['reference'])) {
             return \Tools::safeOutput($data['reference']);
         }
@@ -561,7 +579,6 @@ class Blik
      */
     private static function extractOrderIdFromReference($reference)
     {
-        // Your callback has reference: "202412191212769"
         // This might be the order ID directly, or we need to map it
         if (is_numeric($reference)) {
             return (int)$reference;
@@ -580,7 +597,6 @@ class Blik
      */
     private static function extractOrderIdFromPlatform($platform_order_id)
     {
-        // Your callback has platforms[0].order_id: "TRN_sZGlrL8M7fJy0YlouMFTnqiubJmpsS_hop_Order_28"
         // Look for pattern like "_Order_28" or "Order_28"
         if (preg_match('/_Order_(\d+)$/', $platform_order_id, $matches)) {
             return (int)$matches[1];
@@ -753,7 +769,7 @@ class Blik
             );
 
             \PrestaShopLogger::addLog(
-                'BLIK transaction history created - Order ID: ' . $order_id . 
+                'BLIK transaction history created - Order ID: ' . $order_id .
                 ', Transaction ID: ' . $transaction_id . ', Status: ' . $payment_status,
                 1,
                 null,
@@ -762,7 +778,8 @@ class Blik
 
         } catch (\Exception $e) {
             \PrestaShopLogger::addLog(
-                'Error creating BLIK transaction history: ' . $e->getMessage() . ' - Order ID: ' . $order_id,
+                'Error creating BLIK transaction history: ' . $e->getMessage() .
+                ' - Order ID: ' . $order_id,
                 3, // LOG_SEVERITY_LEVEL_ERROR
                 null,
                 'GlobalPayments'

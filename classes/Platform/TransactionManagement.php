@@ -378,14 +378,18 @@ class TransactionManagement
     }
 
     /**
-     * States whether the order state is 'Waiting for GlobalPayments payment'.
+     * States whether the order state is 'Waiting for payment'.
      *
      * @param \Order $psOrder
      * @return bool
      */
     public function waitingForPayment($psOrder)
     {
-        return (int) $psOrder->getCurrentState() === (int) \Configuration::get(OrderStateInstaller::PAYMENT_WAITING);
+        $currentState = (int) $psOrder->getCurrentState();
+        $globalPaymentsWaiting = (int) \Configuration::get(OrderStateInstaller::PAYMENT_WAITING);
+        $preparation = (int) \Configuration::get('PS_OS_PREPARATION');
+
+        return $currentState === $globalPaymentsWaiting || $currentState === $preparation;
     }
 
     /**

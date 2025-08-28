@@ -239,7 +239,7 @@ class GlobalPaymentsAsyncPaymentMethodValidationModuleFrontController extends Mo
             // Get the gateway to process Open Banking payment
             $gateway = $this->paymentMethodFactory->create($gatewayId);
             $total = (float) $cart->getOrderTotal(true, Cart::BOTH);
-            $orderState = Configuration::get(OrderStateInstaller::PAYMENT_WAITING);
+            $orderState = Configuration::get('PS_OS_PREPARATION');
 
             // Create the order
             $this->module->validateOrder(
@@ -302,7 +302,7 @@ class GlobalPaymentsAsyncPaymentMethodValidationModuleFrontController extends Mo
         try {// Get the gateway to process Open Banking payment
             $gateway = $this->paymentMethodFactory->create($gatewayId);
             $total = (float) $cart->getOrderTotal(true, Cart::BOTH);
-            $orderState = Configuration::get(OrderStateInstaller::PAYMENT_WAITING);
+            $orderState = Configuration::get('PS_OS_PREPARATION');
 
             // Create the order
             $this->module->validateOrder(

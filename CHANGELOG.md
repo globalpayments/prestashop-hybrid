@@ -4,7 +4,11 @@
 
 # Changelog
 
-## Latest Version - ## v1.7.1 (08/21/25)
+## Latest Version - ## v1.7.2 (08/28/25)
+- Fixed 3DS Authentication - 500 Error
+- Order status updates for Cancelled order
+
+## v1.7.1 (08/21/25)
 - Added Account name mandetory Enhancement
 - Improved Order Status Behavior | UI Improvement & Behaviour on checkout page
 

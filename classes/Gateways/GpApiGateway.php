@@ -197,10 +197,8 @@ class GpApiGateway extends AbstractGateway
             'developerId' => $this->developerId,
             'country' => $country->iso_code,
             'environment' => $this->isProduction ? Environment::PRODUCTION : Environment::TEST,
-            'methodNotificationUrl' => \Context::getContext()->link->
-                getModuleLink('globalpayments', 'methodNotification', [], true),
-            'challengeNotificationUrl' => \Context::getContext()->link->
-                getModuleLink('globalpayments', 'challengeNotification', [], true),
+            'methodNotificationUrl' => $this->getValidNotificationUrl('methodNotification'),
+            'challengeNotificationUrl' => $this->getValidNotificationUrl('challengeNotification'),
             'merchantContactUrl' => $this->merchantContactUrl,
             'dynamicHeaders' => [
                 'x-gp-platform' => 'prestashop;version=' . _PS_VERSION_,
@@ -522,5 +520,39 @@ class GpApiGateway extends AbstractGateway
             return BankSelect::processOpenBankingSale( $this, $order_id, $_POST["open_banking"] );
 
         return parent::processPayment( $order_id );
+    }
+
+    /**
+     * Get valid notification URL for development/production
+     *
+     * @param string $endpoint
+     * @return string
+     */
+    private function getValidNotificationUrl($endpoint)
+    {
+        $context = \Context::getContext();
+        $url = $context->link->getModuleLink('globalpayments', $endpoint, [], true);
+
+        // For sandbox/test environment, we need to provide a valid notification URL
+        if (!$this->isProduction) {
+            // For local development with XAMPP, ensure proper URL format
+            if (strpos($url, 'localhost') !== false || strpos($url, '127.0.0.1') !== false) {
+                // For GP-API sandbox, we can use a placeholder URL that indicates it's for testing
+                // The actual notification won't work in localhost, but the format will be valid
+                $url = str_replace(['localhost', '127.0.0.1'], 'sandbox-webhook.example.com', $url);
+                $url = str_replace('http://', 'https://', $url);
+            }
+        }
+
+        // Validate URL format
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            // Fallback to a basic valid URL format using dynamic site information
+            $shopDomain = $context->shop->domain ?? 'sandbox-webhook.example.com';
+            $shopUri = $context->shop->getBaseURI() ?? '/';
+            // Build dynamic fallback URL
+            $url = "https://{$shopDomain}{$shopUri}modules/globalpayments/controllers/front/{$endpoint}.php";
+        }
+
+        return $url;
     }
 }

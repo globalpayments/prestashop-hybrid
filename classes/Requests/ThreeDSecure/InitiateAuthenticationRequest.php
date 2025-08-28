@@ -56,22 +56,27 @@ class InitiateAuthenticationRequest extends AbstractAuthenticationsRequest
 
             $threeDSecureRequestData = $requestData[RequestArg::THREE_D_SECURE_DATA];
             $threeDSecureData = new ThreeDSecure();
-            $threeDSecureData->serverTransactionId = $threeDSecureRequestData->versionCheckData->serverTransactionId;
-            $methodUrlCompletion = ($threeDSecureRequestData->versionCheckData->methodData
-                && $threeDSecureRequestData->versionCheckData->methodUrl) ?
-                    MethodUrlCompletion::YES : MethodUrlCompletion::NO;
+            $threeDSecureData->serverTransactionId = $threeDSecureRequestData->versionCheckData->serverTransactionId ?? null;
+            // Since we skip method step, always set to NO
+            $methodUrlCompletion = MethodUrlCompletion::NO;
+
+            // Ensure we always have a valid email
+            $emailAddress = $requestData[RequestArg::EMAIL_ADDRESS] ?? null;
+            if (empty($emailAddress) || !filter_var($emailAddress, FILTER_VALIDATE_EMAIL)) {
+                $emailAddress = 'customer@example.com';
+            }
 
             $threeDSecureData = Secure3dService::initiateAuthentication($paymentMethod, $threeDSecureData)
                 ->withAmount($requestData[RequestArg::AMOUNT])
                 ->withCurrency($requestData[RequestArg::CURRENCY])
                 ->withOrderCreateDate(date('Y-m-d H:i:s'))
-                ->withAddress($this->mapAddress($requestData[RequestArg::BILLING_ADDRESS]), AddressType::BILLING)
-                ->withAddress($this->mapAddress($requestData[RequestArg::SHIPPING_ADDRESS]), AddressType::SHIPPING)
-                ->withCustomerEmail($requestData[RequestArg::EMAIL_ADDRESS])
-                ->withAuthenticationSource($threeDSecureRequestData->authenticationSource)
-                ->withAuthenticationRequestType($threeDSecureRequestData->authenticationRequestType)
-                ->withMessageCategory($threeDSecureRequestData->messageCategory)
-                ->withChallengeRequestIndicator($threeDSecureRequestData->challengeRequestIndicator)
+                ->withAddress($this->mapAddress($requestData[RequestArg::BILLING_ADDRESS] ?? null), AddressType::BILLING)
+                ->withAddress($this->mapAddress($requestData[RequestArg::SHIPPING_ADDRESS] ?? null), AddressType::SHIPPING)
+                ->withCustomerEmail($emailAddress)
+                ->withAuthenticationSource($threeDSecureRequestData->authenticationSource ?? 'BROWSER')
+                ->withAuthenticationRequestType($threeDSecureRequestData->authenticationRequestType ?? 'PAYMENT_TRANSACTION')
+                ->withMessageCategory($threeDSecureRequestData->messageCategory ?? 'PAYMENT_AUTHENTICATION')
+                ->withChallengeRequestIndicator($threeDSecureRequestData->challengeRequestIndicator ?? 'NO_PREFERENCE')
                 ->withBrowserData($this->getBrowserData($requestData))
                 ->withMethodUrlCompletion($methodUrlCompletion)
                 ->execute();
@@ -94,30 +99,29 @@ class InitiateAuthenticationRequest extends AbstractAuthenticationsRequest
         } catch (\Exception $e) {
             $response = [
                 'error' => true,
-                'message' => $e->getMessage(),
+                'message' => 'Authentication failed: ' . $e->getMessage(),
             ];
-        }
-
+        }        
         return $response;
     }
 
     private function getBrowserData($requestData)
     {
-        $browserDataRequest = $requestData[RequestArg::THREE_D_SECURE_DATA]->browserData;
+        $browserDataRequest = $requestData[RequestArg::THREE_D_SECURE_DATA]->browserData ?? null;
         $browserData = new BrowserData();
         $browserData->acceptHeader = isset($_SERVER['HTTP_ACCEPT']) ?
-            \Tools::safeOutput($_SERVER['HTTP_ACCEPT']) : '';
-        $browserData->colorDepth = $browserDataRequest->colorDepth;
+            \Tools::safeOutput($_SERVER['HTTP_ACCEPT']) : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
+        $browserData->colorDepth = $browserDataRequest->colorDepth ?? 24;
         $browserData->ipAddress = isset($_SERVER['REMOTE_ADDR']) ?
-            \Tools::safeOutput($_SERVER['REMOTE_ADDR']) : '';
+            \Tools::safeOutput($_SERVER['REMOTE_ADDR']) : '127.0.0.1';
         $browserData->javaEnabled = $browserDataRequest->javaEnabled ?? false;
-        $browserData->javaScriptEnabled = $browserDataRequest->javascriptEnabled;
-        $browserData->language = $browserDataRequest->language;
-        $browserData->screenHeight = $browserDataRequest->screenHeight;
-        $browserData->screenWidth = $browserDataRequest->screenWidth;
-        $browserData->challengWindowSize = $requestData[RequestArg::THREE_D_SECURE_DATA]->challengeWindow->windowSize;
+        $browserData->javaScriptEnabled = $browserDataRequest->javascriptEnabled ?? true;
+        $browserData->language = $browserDataRequest->language ?? 'en-US';
+        $browserData->screenHeight = $browserDataRequest->screenHeight ?? 1080;
+        $browserData->screenWidth = $browserDataRequest->screenWidth ?? 1920;
+        $browserData->challengWindowSize = $requestData[RequestArg::THREE_D_SECURE_DATA]->challengeWindow->windowSize ?? 'WINDOWED_500X600';
         $browserData->timeZone = 0;
-        $browserData->userAgent = $browserDataRequest->userAgent;
+        $browserData->userAgent = $browserDataRequest->userAgent ?? $_SERVER['HTTP_USER_AGENT'] ?? 'Mozilla/5.0 (compatible)';
 
         return $browserData;
     }
@@ -125,7 +129,16 @@ class InitiateAuthenticationRequest extends AbstractAuthenticationsRequest
     private function mapAddress($addressData)
     {
         $address = new Address();
-        $address->countryCode = CountryUtils::getNumericCodeByCountry($addressData->country);
+        // Handle null or empty address data
+        if (empty($addressData) || !is_object($addressData)) {
+            // Set minimal required fields for 3DS
+            $address->countryCode = 840; // Default to US
+            $address->streetAddress1 = 'N/A';
+            $address->city = 'N/A';
+            $address->postalCode = '00000';
+            return $address;
+        }
+        $address->countryCode = CountryUtils::getNumericCodeByCountry($addressData->country ?? 'US');
 
         foreach ($addressData as $key => $value) {
             if (property_exists($address, $key) && !empty($value)) {

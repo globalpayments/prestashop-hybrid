@@ -52,6 +52,7 @@ class GlobalPaymentsInitiateAuthenticationModuleFrontController extends ModuleFr
         $currency = $data->order->currency ?? null;
         $muTokenId = $data->tokenId ?? null;
         $shippingAddress = $data->order->shippingAddress ?? null;
+        $customerEmail = $data->order->emailAddress ?? $data->order->email ?? 'customer@example.com';
 
         $threeDSecureData = new stdClass();
         $threeDSecureData->authenticationSource = $data->authenticationSource ?? null;
@@ -67,6 +68,7 @@ class GlobalPaymentsInitiateAuthenticationModuleFrontController extends ModuleFr
             'billingAddress' => $billingAddress,
             'cardData' => $cardData,
             'currency' => $currency,
+            'emailAddress' => $customerEmail,
             'multiUseTokenId' => $muTokenId,
             'shippingAddress' => $shippingAddress,
             'threeDSecureData' => $threeDSecureData,

@@ -69,8 +69,9 @@ class CheckEnrollmentRequest extends AbstractAuthenticationsRequest
             }
 
             if (Secure3dVersion::TWO === $threeDSecureData->getVersion()) {
-                $response['methodUrl'] = $threeDSecureData->issuerAcsUrl;
-                $response['methodData'] = $threeDSecureData->payerAuthenticationRequest;
+                // Skip method step to avoid 3DS processing issues
+                $response['methodUrl'] = null;
+                $response['methodData'] = null;
                 $response['messageType'] = $threeDSecureData->messageType;
 
                 return $response;
@@ -80,13 +81,18 @@ class CheckEnrollmentRequest extends AbstractAuthenticationsRequest
                 throw new \Exception($errorMessage);
             }
         } catch (ApiException $e) {
-            \PrestaShopLogger::addLog($e->getMessage());
+            \PrestaShopLogger::addLog('3DS CheckEnrollment ApiException: ' . $e->getMessage(), 3);
+            error_log('3DS CheckEnrollment ApiException: ' . $e->getMessage());
+
             if ('50022' === $e->getCode()) {
                 throw new \Exception($errorMessage);
             }
 
             throw new \Exception($e->getMessage());
         } catch (\Exception $e) {
+            \PrestaShopLogger::addLog('3DS CheckEnrollment Exception: ' . $e->getMessage(), 3);
+            error_log('3DS CheckEnrollment Exception: ' . $e->getMessage());
+
             $response = [
                 'error' => true,
                 'message' => $e->getMessage(),

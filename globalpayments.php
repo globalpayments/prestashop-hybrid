@@ -99,7 +99,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '1.7.1';
+        $this->version = '1.7.2';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '1.7.5', 'max' => _PS_VERSION_];

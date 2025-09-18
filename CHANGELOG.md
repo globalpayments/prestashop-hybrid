@@ -4,7 +4,10 @@
 
 # Changelog
 
-## Latest Version - ## v1.7.2 (08/28/25)
+## Latest Version - ## v1.7.3 (09/18/25)
+- Updated support for Prestashop v8.0.0 onwards
+
+## v1.7.2 (08/28/25)
 - Fixed 3DS Authentication - 500 Error
 - Order status updates for Cancelled order
 

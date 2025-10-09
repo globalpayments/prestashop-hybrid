@@ -4,7 +4,11 @@
 
 # Changelog
 
-## Latest Version - ## v1.7.3 (09/18/25)
+## Latest Version - ## v1.7.4 (10/09/25)
+- Fixed bug causing transaction failures when using TransIT gateway
+- Includes the missing COF fields while card is being saved
+
+## v1.7.3 (09/18/25)
 - Updated support for Prestashop v8.0.0 onwards
 
 ## v1.7.2 (08/28/25)

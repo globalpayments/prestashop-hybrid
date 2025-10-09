@@ -42,6 +42,9 @@ use GlobalPayments\PaymentGatewayProvider\Requests\RequestArg;
 use GlobalPayments\PaymentGatewayProvider\Requests\RequestInterface;
 use GlobalPayments\PaymentGatewayProvider\Requests\ThreeDSecure\AbstractAuthenticationsRequest;
 use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
+use GlobalPayments\Api\Entities\StoredCredential;
+use GlobalPayments\Api\Entities\Enums\StoredCredentialInitiator;
+use GlobalPayments\PaymentGatewayProvider\Platform\Token;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -237,8 +240,15 @@ class SdkClient implements ClientInterface
                 $this->cardData->cardHolderName = $this->getArgument(RequestArg::CARD_HOLDER_NAME);
             }
 
-            if ($this->hasArgument(RequestArg::REQUEST_MULTI_USE_TOKEN)) {
-                $this->builderArgs['requestMultiUseToken'] = [true];
+          if ($token !== null) {
+                $is_first = empty($token->id_globalpayments_token);
+
+                $storedCredential = new StoredCredential();
+                $storedCredential->initiator = StoredCredentialInitiator::PAYER;
+                $storedCredential->type = 'UNSCHEDULED';
+                $storedCredential->sequence = $is_first ? 'FIRST' : 'SUBSEQUENT';
+
+                $this->builderArgs['storedCredential'] = [$storedCredential];
             }
         }
 
@@ -324,6 +334,29 @@ class SdkClient implements ClientInterface
 
         if ($this->hasArgument(RequestArg::ENTRY_MODE)) {
             $this->cardData->entryMethod = $this->getArgument(RequestArg::ENTRY_MODE);
+        }
+
+        $userId = \Context::getContext()->customer->id;
+        $already_saved = false;
+
+        $gatewayId = $this->getArgument(RequestArg::GATEWAY_PROVIDER_ID);
+        $existing_tokens = Token::getCustomerTokens($userId, $gatewayId);
+
+        foreach ($existing_tokens as $existing_token) {
+            if (
+                isset($existing_token->details->last4, $existing_token->details->expiryMonth, $existing_token->details->expiryYear) &&
+                isset($token->details->cardLast4, $token->details->expiryMonth, $token->details->expiryYear) &&
+                $existing_token->details->last4 === $token->details->cardLast4 &&
+                $existing_token->details->expiryMonth === $token->details->expiryMonth &&
+                $existing_token->details->expiryYear === $token->details->expiryYear
+            ) {
+                $already_saved = true;
+                break;
+            }
+        }
+
+        if (!$already_saved) {
+            $this->builderArgs['requestMultiUseToken'] = [true];
         }
     }
 

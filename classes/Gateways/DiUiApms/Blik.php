@@ -1,6 +1,8 @@
 <?php
 namespace GlobalPayments\PaymentGatewayProvider\Gateways\DiUiApms;
+
 if (!defined('_PS_VERSION_')) { exit; }
+
 use GlobalPayments\Api\Entities\Enums\{
     AlternativePaymentType,
     Environment,
@@ -14,7 +16,7 @@ use GlobalPayments\PaymentGatewayProvider\Gateways\GpApiGateway;
 
 // GlobalPayments Helper classes
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\CheckoutHelper;
-use GlobalPayments\PaymentGatewayProvider\Platform\{TransactionHistory, TransactionManagement};
+use GlobalPayments\PaymentGatewayProvider\Platform\{TransactionHistory, TransactionManagement, Utils};
 use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
 
 /**
@@ -181,6 +183,8 @@ class Blik
      */
     public static function handleBlikStatusNotification()
     {
+        Utils::validateSignature();
+
         \PrestaShopLogger::addLog('BLIK status notification received', 1, null, 'GlobalPayments');
 
         // Get request data (could be GET or POST)
@@ -321,6 +325,8 @@ class Blik
      */
     public static function handleBlikRedirect()
     {
+        Utils::validateSignature();
+
         $status = isset($_REQUEST["status"]) ? $_REQUEST["status"] : '';
         $order_id = isset($_REQUEST["order_id"]) ? (int)$_REQUEST["order_id"] : 0;
 
@@ -497,6 +503,8 @@ class Blik
      */
     public static function handleRedirectRequest($params = [])
     {
+        Utils::validateSignature();
+
         // Merge with request data if params not provided
         if (empty($params)) {
             $params = array_merge($_GET, $_POST);
@@ -522,6 +530,8 @@ class Blik
      */
     public static function handleWebhookRequest($params = [])
     {
+        Utils::validateSignature();
+
         // Log incoming webhook
         \PrestaShopLogger::addLog('BLIK webhook request received', 1, null, 'GlobalPayments');
 

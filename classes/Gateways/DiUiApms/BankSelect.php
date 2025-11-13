@@ -14,7 +14,7 @@ use GlobalPayments\PaymentGatewayProvider\Gateways\GpApiGateway;
 
 // GlobalPayments Helper classes
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\CheckoutHelper;
-use GlobalPayments\PaymentGatewayProvider\Platform\{TransactionHistory, TransactionManagement};
+use GlobalPayments\PaymentGatewayProvider\Platform\{TransactionHistory, TransactionManagement, Utils};
 use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
 
 /**
@@ -177,6 +177,8 @@ class BankSelect
      */
     public static function handleObStatusNotification()
     {
+        Utils::validateSignature();
+        
         \PrestaShopLogger::addLog('Open Banking status notification received', 1, null, 'GlobalPayments');
 
         // Get request data (could be GET or POST)
@@ -317,6 +319,8 @@ class BankSelect
      */
     public static function handleObRedirect()
     {
+        Utils::validateSignature();
+
         $status = isset($_REQUEST["status"]) ? $_REQUEST["status"] : '';
         $orderId = isset($_REQUEST["order_id"]) ? (int)$_REQUEST["order_id"] : 0;
 
@@ -505,6 +509,8 @@ class BankSelect
      */
     public static function handleRedirectRequest($params = [])
     {
+        Utils::validateSignature();
+
         // Merge with request data if params not provided
         if (empty($params)) {
             $params = array_merge($_GET, $_POST);
@@ -530,6 +536,8 @@ class BankSelect
      */
     public static function handleWebhookRequest($params = [])
     {
+        Utils::validateSignature();
+        
         // Log incoming webhook
         \PrestaShopLogger::addLog('Open Banking webhook request received', 1, null, 'GlobalPayments');
 

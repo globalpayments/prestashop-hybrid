@@ -4,7 +4,11 @@
 
 # Changelog
 
-## Latest Version - ## v1.7.4 (10/09/25)
+## Latest Version - ## v1.7.5 (12/12/25)
+- Added 3DS mandate, enables 3D secure authentication automatically in countries where it is a legal requirement.
+- Added validation to APM payment methods
+
+## v1.7.4 (10/09/25)
 - Fixed bug causing transaction failures when using TransIT gateway
 - Includes the missing COF fields while card is being saved
 

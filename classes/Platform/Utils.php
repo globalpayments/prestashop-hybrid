@@ -15,7 +15,9 @@
 
 namespace GlobalPayments\PaymentGatewayProvider\Platform;
 
-use GlobalPayments\Api\Entities\Enums\TransactionStatus;
+use GlobalPayments\Api\Entities\Enums\{ShaHashType, TransactionStatus};
+use GlobalPayments\PaymentGatewayProvider\Gateways\GpApiGateway;
+use LogicException;
 use PrestaShopBundle\Translation\TranslatorComponent as Translator;
 
 if (!defined('_PS_VERSION_')) {
@@ -129,5 +131,34 @@ class Utils
         $string = \Tools::replaceAccentedChars($string);
 
         return preg_replace('/[^a-zA-Z-_.]/', '', $string);
+    }
+
+    /**
+     * Validate that querry string hasn't been tamperred with. This requires us to take the querry string
+     * minus the signature at the beginning, concatenating the merchant's app key to the end of that, and
+     * calculating the SHA512 hash. That string should equal the request signature at the beginning of the
+     * querry string.
+     * 
+     * @return void 
+     * @throws LogicException 
+     */
+    public static function validateSignature(): void
+    {
+        $gateway = new GpApiGateway();
+
+        $querryString = substr($_SERVER["QUERY_STRING"], strpos($_SERVER["QUERY_STRING"], 'X-GP-Signature'));
+
+        $signature = substr(substr($querryString, 0, strpos($querryString, 'id=') - 1), 15);
+
+        $querryStringSubString = substr($_SERVER["QUERY_STRING"], strpos($_SERVER["QUERY_STRING"], '&id=') + 1);
+
+        $calculatedSignature = hash(
+            ShaHashType::SHA512,
+            $querryStringSubString . $gateway->getCredentialSetting('appKey')
+        );
+
+        if ($signature !== $calculatedSignature) {
+            throw new LogicException('Invalid request signature.');
+        };
     }
 }

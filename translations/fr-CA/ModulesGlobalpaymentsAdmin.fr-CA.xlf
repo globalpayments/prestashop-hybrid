@@ -140,6 +140,16 @@ Veuillez suivre les instructions du fichier readme.txt. Pour passer en mode En l
         <target>Activer 3D Secure</target>
         <note>Line: </note>
       </trans-unit>
+      <trans-unit id="a8eb3fd6d07b93730c2eda6a5e4f8fa3">
+        <source>3D Secure is required in your country and is enabled automatically</source>
+        <target>3D Secure est requis dans votre pays et est activé automatiquement</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f1c49aee9ab36438202a7cf45d1a128b">
+        <source>3D Secure is optional in your country</source>
+        <target>3D Secure est facultatif dans votre pays</target>
+        <note>Line: </note>
+      </trans-unit>
       <trans-unit id="fa364d7cece7894c5e93fe9f40a04e26">
         <source>Please provide Live Credentials.</source>
         <target>Veuillez fournir des identifiants En ligne.</target>

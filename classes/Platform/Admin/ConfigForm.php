@@ -284,12 +284,15 @@ class ConfigForm
                     $selectQuery = [];
                     $inputValue = \Tools::getValue($key, \Configuration::get($key));
                     $selectedOptions = is_array($inputValue) ? $inputValue : explode(',', $inputValue);
-                    foreach ($value['options'] as $optionKey => $optionValue) {
-                        $selectQuery[] = [
-                            'id_option' => $optionKey,
-                            'name' => $optionValue,
-                            'selected' => in_array($optionKey, $selectedOptions),
-                        ];
+
+                    if (isset($value['options'])) {
+                        foreach ($value['options'] as $optionKey => $optionValue) {
+                            $selectQuery[] = [
+                                'id_option' => $optionKey,
+                                'name' => $optionValue,
+                                'selected' => in_array($optionKey, $selectedOptions),
+                            ];
+                        }
                     }
 
                     $currentConfig['options'] = [

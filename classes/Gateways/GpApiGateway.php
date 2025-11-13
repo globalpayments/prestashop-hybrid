@@ -153,6 +153,11 @@ class GpApiGateway extends AbstractGateway
 
     public function getFrontendGatewayOptions()
     {
+
+        if ($this->threeDSecureRequired()){
+          $this->enableThreeDSecure = 1;
+        }
+
         return [
             'apiVersion' => GpApiConnector::GP_API_VERSION,
             'accessToken' => $this->getAccessToken(),
@@ -211,6 +216,24 @@ class GpApiGateway extends AbstractGateway
 
     public function getGatewayFormFields()
     {
+
+        if ($this->threeDSecureRequired()){
+            $threeDSFields = [
+                'title' => $this->translator->trans('Enable 3D Secure', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'hidden',
+                'default' => 1,
+                'description' => $this->translator->trans('3D Secure is required in your country and is enabled automatically', [], 'Modules.Globalpayments.Admin'),
+            ];
+        } else {
+            $threeDSFields = [
+                'title' => $this->translator->trans('Enable 3D Secure', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'default' => 1,
+                'description' => $this->translator->trans('3D Secure is optional in your country', [], 'Modules.Globalpayments.Admin'),
+            ];
+        }
+
+
         return [
             $this->id . '_isProduction' => [
                 'title' => $this->translator->trans('Live Mode', [], 'Modules.Globalpayments.Admin'),
@@ -329,11 +352,7 @@ class GpApiGateway extends AbstractGateway
                 ),
                 'default' => '',
             ],
-            $this->id . '_enableThreeDSecure' => [
-                'title' => $this->translator->trans('Enable 3D Secure', [], 'Modules.Globalpayments.Admin'),
-                'type' => 'switch',
-                'default' => 1,
-            ],
+            $this->id . '_enableThreeDSecure' => $threeDSFields,
         ];
     }
 
@@ -434,7 +453,7 @@ class GpApiGateway extends AbstractGateway
             $path . '/views/css/globalpayments-secure-payment-fields.css'
         );
 
-        // added this 28th March 
+        // added this 28th March to fix js caching
         $context->controller->registerJavascript(
             'globalpayments',
             'https://js.globalpay.com/' . Utils::getJsLibVersion() . '/globalpayments'
@@ -554,5 +573,21 @@ class GpApiGateway extends AbstractGateway
         }
 
         return $url;
+    }
+
+    public function threeDSecureRequired() {
+        if (empty(\Configuration::get('PS_SHOP_COUNTRY_ID'))) {
+            $countryISO = \Country::getIsoById(\Configuration::get('PS_COUNTRY_DEFAULT'));
+        } else {
+            $countryISO = \Country::getIsoById(\Configuration::get('PS_SHOP_COUNTRY_ID'));
+        }
+
+        $three_d_secure_required_countries = array(
+            "AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE",
+            "GR","GB","HU","IE","IM","IT","LV","LT","LU","MT","NL",
+            "PL","PT","RO","SK","SI","ES","SE","IS","LI","NO","JP","IN"
+        );
+
+        return in_array($countryISO, $three_d_secure_required_countries );
     }
 }

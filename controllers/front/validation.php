@@ -21,6 +21,7 @@ use GlobalPayments\PaymentGatewayProvider\Platform\Helper\AddressHelper;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\CheckoutHelper;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\OrderStateHelper;
 use GlobalPayments\PaymentGatewayProvider\Platform\Utils;
+use GlobalPayments\PaymentGatewayProvider\Requests\IntegrationType;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -84,6 +85,14 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
         $currency = $this->context->currency;
         $paymentMethodId = Tools::getValue('payment-method-id');
         $paymentMethod = $this->paymentMethodFactory->create($paymentMethodId);
+        
+        // Check if this is HPP mode (Hosted Payment Page)
+        // If integrationType is HOSTED_PAYMENT_PAGE, redirect to HPP
+        if ($paymentMethod->integrationType === IntegrationType::HOSTED_PAYMENT_PAGE) {
+            $this->processHppPayment($cart, $customer, $currency, $paymentMethod);
+            return;
+        }
+
         $customerName = $customer->firstname . ' ' . $customer->lastname;
 
         $cardDataRaw = Tools::getIsset($paymentMethodId) ?
@@ -179,5 +188,212 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
                 $e->getMessage()
             );
         }
+    }
+
+    /**
+     * Process HPP (Hosted Payment Page) payment
+     *
+     * Creates a pending order and redirects to GP-API hosted payment page.
+     * Follows the same pattern as Magento HPP implementation.
+     *
+     * @param \Cart $cart Shopping cart
+     * @param \Customer $customer Customer
+     * @param \Currency $currency Currency
+     * @param object $paymentMethod Payment method instance
+     * @return void
+     */
+    private function processHppPayment(
+        \Cart $cart,
+        \Customer $customer,
+        \Currency $currency,
+        object $paymentMethod
+    ): void {
+        try {
+
+            $billingAddress = $this->addressHelper->getBillingAddress();
+            $shippingAddress = $this->addressHelper->getShippingAddress();
+            $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
+            $customerName = $customer->firstname . ' ' . $customer->lastname;
+
+            // Create pending order first
+            $orderState = (int)\Configuration::get('GLOBALPAYMENTS_PAYMENT_WAITING');
+ 
+
+            $this->module->validateOrder(
+                (int)$cart->id,
+                $orderState,
+                $total,
+                $paymentMethod->title,
+                '',
+                [],
+                (int)$currency->id,
+                false,
+                $customer->secure_key
+            );
+
+            $orderId = $this->module->currentOrder;
+            $order = new \Order($orderId);
+
+            //This is key for restoring the cart on payment failure
+            $this->checkoutHelper->restoreCart($orderId);
+
+            // Create order model for gateway
+            $orderModel = $this->order->generateOrder(
+                [
+                    'amount' => $total,
+                    'billingAddress' => $billingAddress,
+                    'cardData' => null,
+                    'cardHolderName' => $customerName,
+                    'cartId' => $cart->id,
+                    'currency' => $currency->iso_code,
+                    'dynamicDescriptor' => $paymentMethod->txnDescriptor,
+                    'gatewayProviderId' => $paymentMethod->id,
+                    'multiUseTokenId' => null,
+                    'requestMultiUseToken' => false,
+                    'serverTransId' => null,
+                    'shippingAddress' => $shippingAddress,
+                ]
+            );
+
+            // Process HPP payment - returns transaction with redirect URL
+            $transaction = $paymentMethod->processHppPayment($orderModel, $orderId);
+
+            // Get redirect URL from transaction
+            if (!empty($transaction->payByLinkResponse->url)) {
+                $redirectUrl = $transaction->payByLinkResponse->url;
+                $transactionId = $transaction->transactionReference->transactionId ?? '';
+
+                // Store transaction data in order payment for later completion
+                $this->updateOrderPaymentWithTransactionId($order, $transactionId);
+
+                // Add message to order history
+                $this->addHppInitiationMessage($order, $transactionId, $orderState);
+
+                // Return JSON response with redirect URL for AJAX handling
+                $this->checkoutHelper->postResponse(false, $redirectUrl);
+            } else {
+                throw new \Exception($this->module->l('Failed to get HPP redirect URL'));
+            }
+        } catch (GatewayException $e) {
+            $this->checkoutHelper->postResponse(
+                true,
+                '',
+                $this->utils->mapResponseCodeToFriendlyMessage()
+            );
+        } catch (\Exception $e) {
+            $this->logError('HPP payment failed with exception', [
+                'cart_id' => $cart->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->checkoutHelper->postResponse(
+                true,
+                '',
+                $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * Update order payment with transaction ID
+     *
+     * @param \Order $order Order
+     * @param string $transactionId Transaction ID
+     * @return void
+     */
+    private function updateOrderPaymentWithTransactionId(\Order $order, string $transactionId): void
+    {
+        // TODO We dont have transaction ID at this point
+        // if (empty($transactionId)) {
+        //     $this->logWarning('Empty transaction ID provided for order payment update', [
+        //         'order_id' => $order->id,
+        //     ]);
+        //     return;
+        // }
+
+        $orderPayments = \OrderPayment::getByOrderReference($order->reference);
+
+        if (!empty($orderPayments)) {
+            $orderPayment = $orderPayments[0];
+            $orderPayment->transaction_id = $transactionId;
+            $orderPayment->save();
+        } else {
+            $this->logWarning('No order payment found to update', [
+                'order_id' => $order->id,
+                'order_reference' => $order->reference,
+            ]);
+        }
+    }
+
+    /**
+     * Add HPP initiation message to order
+     *
+     * @param \Order $order Order
+     * @param string $transactionId Transaction ID
+     * @param int $orderState Order state ID
+     * @return void
+     */
+    private function addHppInitiationMessage(\Order $order, string $transactionId, int $orderState): void
+    {
+        // Add message to order history
+        $message = sprintf(
+            $this->module->l('HPP payment initiated. Transaction ID: %s'),
+            $transactionId ?: 'N/A'
+        );
+
+        // Add private message to order
+        $msg = new \Message();
+        $msg->message = $message;
+        $msg->id_order = $order->id;
+        $msg->private = 1;
+        $msg->add();
+    }
+
+    /**
+     * Log warning message
+     *
+     * @param string $message Log message
+     * @param array $context Additional context
+     * @return void
+     */
+    private function logWarning(string $message, array $context = []): void
+    {
+        $this->log($message, \PrestaShopLogger::LOG_SEVERITY_LEVEL_WARNING, $context);
+    }
+
+    /**
+     * Log error message
+     *
+     * @param string $message Log message
+     * @param array $context Additional context
+     * @return void
+     */
+    private function logError(string $message, array $context = []): void
+    {
+        $this->log($message, \PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR, $context);
+    }
+
+    /**
+     * Log message with context
+     *
+     * @param string $message Log message
+     * @param int $severity Severity level
+     * @param array $context Additional context
+     * @return void
+     */
+    private function log(string $message, int $severity, array $context = []): void
+    {
+        $logMessage = sprintf('HPP Validation: %s', $message);
+
+        if (!empty($context)) {
+            $logMessage .= ' | ' . json_encode($context);
+        }
+
+        \PrestaShopLogger::addLog(
+            $logMessage,
+            $severity,
+            null,
+            'GlobalPayments'
+        );
     }
 }

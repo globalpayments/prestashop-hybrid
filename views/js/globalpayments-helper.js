@@ -277,9 +277,10 @@
             var submitButtonTarget = $(this.getSubmitButtonTargetSelector(paymentMethodSelected));
 
             if (isPaymentMethodSelected) {
-                // our gateway was selected
-                submitButtonTarget.show();
-                this.hidePlaceOrderButton();
+                if (window.globalpayments_secure_payment_fields_params.gatewayOptions.integrationMethod === 'drop in ui') {
+                    submitButtonTarget.show();
+                    this.hidePlaceOrderButton();
+                }
 
                 // PrestaShop bug: show form when the GP payment option is the only one
                 var form = $('.js-payment-option-form');
@@ -335,6 +336,28 @@
             return true;
         },
 
+        /**
+         * Makes phone number a required field and removes 
+         * optional text
+         * 
+         * @returns {Void}
+         */
+        enforcePhoneNumber: function(){
+            let phoneNumberInputs = document.querySelectorAll("input[id$='phone']");
+            if(!phoneNumberInputs){
+                return;
+            }
+            phoneNumberInputs.forEach((el)=>{
+                el.setAttribute("required", true);
+                let optionalText = el.parentElement?.nextElementSibling;
+                
+                if(optionalText && optionalText.innerText.trim().toUpperCase().includes("OPTIONAL")){
+                    optionalText.innerText = "";
+                }
+            })
+        },
+
+        
         /**
          * Get AJAX URL for a specific controller
          *

@@ -23,6 +23,8 @@ class OrderStateInstaller
 {
     public const CAPTURE_WAITING = 'GLOBALPAYMENTS_CAPTURE_WAITING';
     public const PAYMENT_WAITING = 'GLOBALPAYMENTS_PAYMENT_WAITING';
+    public const REFUND_ERROR = 'GLOBALPAYMENTS_REFUND_ERROR';
+    public const PAYMENT_DECLINED = 'GLOBALPAYMENTS_PAYMENT_DECLINED';
 
     /**
      * Install all the orders states.
@@ -44,6 +46,16 @@ class OrderStateInstaller
          */
         $this->installOrderState(self::PAYMENT_WAITING, $this->getPaymentMessages());
 
+        /*
+         * Order state for GlobalPayments Refund Error
+         */
+        $this->installOrderState(self::REFUND_ERROR, $this->getRefundErrorMessages());
+
+        /*
+         * Order state for GlobalPayments Payment Declined
+         */
+        $this->installOrderState(self::PAYMENT_DECLINED, $this->getPaymentDeclinedMessages());
+
         return true;
     }
 
@@ -57,6 +69,8 @@ class OrderStateInstaller
         try {
             $this->updateOrderState(self::CAPTURE_WAITING, $this->getCaptureMessages());
             $this->updateOrderState(self::PAYMENT_WAITING, $this->getPaymentMessages());
+            $this->updateOrderState(self::REFUND_ERROR, $this->getRefundErrorMessages());
+            $this->updateOrderState(self::PAYMENT_DECLINED, $this->getPaymentDeclinedMessages());
 
             return true;
         } catch (\Exception $e) {
@@ -111,6 +125,32 @@ class OrderStateInstaller
     }
 
     /**
+     * Get the refund error message for different languages.
+     *
+     * @return array
+     */
+    private function getRefundErrorMessages()
+    {
+        return [
+            'en' => 'GlobalPayments refund error',
+            'fr' => 'Erreur de remboursement GlobalPayments',
+        ];
+    }
+
+    /**
+     * Get the payment declined message for different languages.
+     *
+     * @return array
+     */
+    private function getPaymentDeclinedMessages()
+    {
+        return [
+            'en' => 'GlobalPayments payment declined',
+            'fr' => 'Paiement GlobalPayments refusé',
+        ];
+    }
+
+    /**
      * Install order state.
      *
      * @param string $configKey
@@ -130,7 +170,8 @@ class OrderStateInstaller
             $orderState->invoice = false;
             $orderState->send_email = false;
             $orderState->logable = true;
-            $orderState->color = '#809FFF';
+            // Use red color for error states, blue for waiting states
+            $orderState->color = (in_array($configKey, [self::REFUND_ERROR, self::PAYMENT_DECLINED])) ? '#DC143C' : '#809FFF';
 
             if ($orderState->add()) {
                 $source = _PS_ROOT_DIR_ . '/img/os/' . (int) \Configuration::get('PS_OS_PREPARATION') . '.gif';
@@ -177,11 +218,14 @@ class OrderStateInstaller
      * @return void
      *
      * @throws \PrestaShopException
+     * @throws \PrestaShopDatabaseException
+     * 
      */
     private function updateOrderState($configKey, $messages)
     {
         $orderStateId = \Configuration::get($configKey);
         if (!$orderStateId) {
+            $this->installOrderState($configKey, $messages);
             return;
         }
 

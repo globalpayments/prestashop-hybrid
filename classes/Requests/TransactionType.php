@@ -38,6 +38,9 @@ abstract class TransactionType
     // apm requests
     public const APM_AUTHORIZATION = 'apmAuthorization';
 
+    // hpp requests
+    public const HPP_TRANSACTION = 'hppAuthorization';
+
     // mgmt requests
     public const REFUND = 'refund';
     public const REVERSAL = 'reverse';

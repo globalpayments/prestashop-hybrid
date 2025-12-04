@@ -97,7 +97,22 @@
 
             // General
             $(document).ready(function (e) {
+                const isHppEnabled = that.isHppEnabled();
                 $(helper.getPlaceOrderButtonSelector()).on('click', function ($e) {
+                    // For HPP mode, use AJAX to prevent raw JSON error display
+                    if (isHppEnabled) {
+                        $e.preventDefault();
+                        $e.stopImmediatePropagation();
+                        
+                        // Validate terms and conditions before processing
+                        if (!helper.validateTermsAndConditions(that.id)) {
+                            return false;
+                        }
+                        
+                        that.processHppPayment();
+                        return false;
+                    }
+                    
                     if (helper.getTokenId(that.id) && that.id === 'globalpayments_ucp') {
                         $e.preventDefault();
                         $e.stopImmediatePropagation();
@@ -113,6 +128,10 @@
 
                     return true;
                 });
+                //Make Phone number required if 3DS is enabled and HPP mode is used. 
+                if(isHppEnabled && that.isThreeDSecureEnabled()){
+                    helper.enforcePhoneNumber();
+                }
             });
 
             // Checkout
@@ -138,6 +157,12 @@
          * @returns
          */
         renderPaymentFields: function (e) {
+            // For HPP mode, skip rendering payment fields entirely
+            if (this.isHppEnabled()) {
+                helper.toggleSubmitButtons();
+                return;
+            }
+
             if (!this.gatewayOptions.accessToken) {
                 if (
                     $('#' + this.id + '-' + this.fieldOptions['card-number-field'].class).children().length > 0
@@ -584,6 +609,72 @@
         },
 
         /**
+         * Process HPP (Hosted Payment Page) payment via AJAX
+         * 
+         * This prevents raw JSON error responses from being displayed to the user
+         * by using AJAX to call validation.php and handling the response properly.
+         * 
+         * @returns {void}
+         */
+        processHppPayment: function () {
+            
+            // Block UI during processing
+            helper.blockOnSubmit();
+            
+            var self = this;
+            var form = $(helper.getForm(this.id));
+            
+            const defaultHPPFailedTxt = 'Payment processing failed. Please Refresh the page and try again.';
+
+            // Make AJAX call to validation.php
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                dataType: 'json',
+                data: form.serialize(),
+                success: function(response) {
+                    
+                    // Check if there's a redirect URL (successful HPP initiation)
+                    if (response.redirect) {
+                        window.location.href = response.redirect;
+                        return;
+                    }
+                    
+                    // If we get here, something went wrong
+                    helper.unblockOnError();
+                    
+                    if (response.error && response.errorMessage) {
+                        helper.showPaymentError(self.id, response.errorMessage);
+
+                    } else {
+                        helper.showPaymentError(self.id, defaultHPPFailedTxt);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    helper.unblockOnError();
+                    
+                    console.error('HPP payment error:', error);
+                    console.error('XHR Response:', xhr.responseText);
+                    
+                    // Try to parse error response
+                    var errorMessage = defaultHPPFailedTxt;
+                    
+                    try {
+                        var errorResponse = JSON.parse(xhr.responseText);
+                        if (errorResponse.errorMessage) {
+                            errorMessage = errorResponse.errorMessage;
+                        }
+                    } catch (e) {
+                        // If we can't parse the response, use the default message
+                        console.error('Could not parse error response:', e);
+                    }
+                    
+                    helper.showPaymentError(self.id, errorMessage);
+                }
+            });
+        },
+
+        /**
          * States whether the 3D Secure authentication protocol should be processed.
          *
          * @returns {Boolean}
@@ -744,6 +835,15 @@
         getSubmitButtonText: function () {
             return $('#payment-confirmation button').text().replace(/\n/g,'').trim();
         },
+
+        /*
+        * Determines if the intergration type is HPP
+        *
+        * @returns {Boolean}
+        */ 
+       isHppEnabled: function(){
+            return this.gatewayOptions?.integrationMethod === 'hosted payment page'
+       }
     };
 
     new GlobalPaymentsPrestaShop(globalpayments_secure_payment_fields_params, globalpayments_secure_payment_threedsecure_params);

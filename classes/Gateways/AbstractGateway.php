@@ -174,6 +174,12 @@ abstract class AbstractGateway implements GatewayInterface
      */
     public $enableBlikPayment;
 
+    /**
+     * The integration type (drop in ui or HPP)
+     *
+     * @var string
+     */
+    public $integrationType;
 
     /**
      * States whether the Open Banking payment method should be enabled
@@ -253,7 +259,8 @@ abstract class AbstractGateway implements GatewayInterface
         $this->txnDescriptor = \Configuration::get($this->id . '_txnDescriptor');
         $this->allowCardSaving = \Configuration::get($this->id . '_allowCardSaving') === '1';
         $this->sortOrder = \Configuration::get($this->id . '_sortOrder');
-        
+        $this->integrationType = \Configuration::get($this->id . '_integrationType');
+
         // Only set Blik Payment and Open Banking if conditions are met
         if ($this->isPolandWithPLNCurrency()) {
             $this->enableBlikPayment = \Configuration::get($this->id . '_enableBlikPayment') === '1';
@@ -292,7 +299,7 @@ abstract class AbstractGateway implements GatewayInterface
     {
         $country = new \Country((int) \Configuration::get('PS_COUNTRY_DEFAULT'));
         $currency = new \Currency((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
-        
+
         return $country->iso_code === 'PL' && $currency->iso_code === 'PLN';
     }
 
@@ -380,7 +387,7 @@ abstract class AbstractGateway implements GatewayInterface
                 ),
                 'default' => 0,
             ];
-            
+
             $baseFields[$this->id . '_enableOpenBanking'] = [
                 'title' => $this->translator->trans('Enable Open Banking', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'switch',
@@ -873,6 +880,7 @@ abstract class AbstractGateway implements GatewayInterface
             TransactionType::CREATE_TRANSACTION_KEY => Requests\CreateTransactionKeyRequest::class,
             TransactionType::DW_AUTHORIZATION => Requests\DigitalWallets\AuthorizationRequest::class,
             TransactionType::GET_ACCESS_TOKEN => Requests\GetAccessTokenRequest::class,
+            TransactionType::HPP_TRANSACTION => Requests\HostedPaymentPages\InitiatePaymentRequest::class,
             TransactionType::INITIATE_AUTHENTICATION => Requests\ThreeDSecure\InitiateAuthenticationRequest::class,
             TransactionType::OB_AUTHORIZATION => Requests\OpenBanking\InitiatePaymentRequest::class,
             TransactionType::REFUND => Requests\RefundRequest::class,

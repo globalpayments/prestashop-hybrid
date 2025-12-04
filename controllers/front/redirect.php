@@ -21,17 +21,25 @@ class GlobalpaymentsRedirectModuleFrontController extends ModuleFrontController
         $action = Tools::getValue('action');
         $order_id = Tools::getValue('order_id');
 
-        // Log the incoming request for debugging
-        PrestaShopLogger::addLog(
-            'BLIK Redirect: action=' . $action . ', order_id=' . $order_id, 1, null, 'GlobalPayments'
-        );
-
         switch ($action) {
             case 'blik_redirect_handler':
                 $this->handleBlikRedirect($order_id);
+
+                // Log the incoming request for debugging
+                PrestaShopLogger::addLog(
+                    'BLIK Redirect: action=' . $action . ', order_id=' . $order_id, 1, null, 'GlobalPayments'
+                );
+
                 break;
             case 'ob_redirect_handler':
                 $this->handleObRedirect($order_id);
+                break;
+            case 'hpp_return':
+                if (Tools::getValue('isError') === '1') {
+                    $this->errors[] = 'A payment error occurred. Please try again or try another payment method.';
+                }
+
+                $this->redirectWithNotifications(Tools::getValue('url'));
                 break;
             default:
                 PrestaShopLogger::addLog('BLIK Redirect: Unknown action: ' . $action, 3, null, 'GlobalPayments');

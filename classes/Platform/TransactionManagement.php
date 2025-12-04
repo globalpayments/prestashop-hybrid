@@ -15,6 +15,7 @@
 
 namespace GlobalPayments\PaymentGatewayProvider\Platform;
 
+use Exception;
 use GlobalPayments\PaymentGatewayProvider\Data\Order as OrderModel;
 use GlobalPayments\PaymentGatewayProvider\Gateways\GpApiGateway;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\OrderStateHelper;
@@ -350,6 +351,34 @@ class TransactionManagement
                 $response = $gateway->processRefund($order);
 
                 if ($response) {
+                    // do some decline checking
+                    if (
+                        $response->responseCode !== '00'
+                        && 'SUCCESS' !== $response->responseCode
+                        && ! str_starts_with($response->responseCode, 'approved')
+                    ) {
+                        $this->context->controller->errors[] = \Tools::displayError('Refund was unsuccessful. Please try again or use a different payment method.');
+
+                        $utils = new Utils();
+                        $errorMessage = $utils->mapResponseCodeToFriendlyMessage($response->responseCode);
+                        
+                        // Save failed refund to transaction history
+                        $this->transactionHistory->saveResult(
+                            $orderId,
+                            TransactionType::REFUND_REVERSE,
+                            $amount,
+                            $currency->iso_code,
+                            '',
+                            0,
+                            $errorMessage,
+                        );
+                        
+                        // Set order status to refund error
+                        $this->setRefundErrorOrderStatus($psOrder);
+                        //Return to prevent duplicate tranaction history records
+                        return;
+                    }
+
                     $this->transactionHistory->saveResult(
                         $orderId,
                         TransactionType::REFUND_REVERSE,
@@ -372,7 +401,14 @@ class TransactionManagement
                     0,
                     $e->getMessage(),
                 );
+                
+                // Set order status to refund error
+                $this->setRefundErrorOrderStatus($psOrder);
+                
                 $this->context->controller->errors[] = \Tools::displayError($e->getMessage());
+                
+                // Re-throw exception to prevent success message from showing
+                throw $e;
             }
         }
     }
@@ -531,6 +567,38 @@ class TransactionManagement
                     $originalOrderAmount
                 ),
                 \PrestaShopLogger::LOG_SEVERITY_LEVEL_INFORMATIVE
+            );
+        }
+    }
+
+    /**
+     * Set order status to refund error when a refund fails
+     *
+     * @param \Order $psOrder
+     *
+     * @return void
+     *
+     * @throws \PrestaShopDatabaseException
+     * @throws \PrestaShopException
+     */
+    private function setRefundErrorOrderStatus($psOrder)
+    {
+        $refundErrorStatus = \Configuration::get(OrderStateInstaller::REFUND_ERROR);
+
+        if ($refundErrorStatus) {
+            $this->orderStateHelper->changeOrderState(
+                $psOrder->id,
+                $this->context->employee->id ?? 0,
+                $refundErrorStatus
+            );
+
+            // Log the status change
+            \PrestaShopLogger::addLog(
+                sprintf(
+                    'GlobalPayments: Order #%d status updated to Refund Error due to failed refund attempt',
+                    $psOrder->id
+                ),
+                \PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR
             );
         }
     }

@@ -65,6 +65,7 @@
             $(document).on('click', this.getLiveModeSelector(), this.toggleCredentialsSettings.bind(this));
             $(document).on('click', this.getEnableSelector(), this.toggleRequiredSettings.bind(this));
             $(document).on('click', this.getCredentialsCheckButtonSelector(), this.checkApiCredentials.bind(this));
+            $(document).on('click', this.getPaymentInterfaceSelector(), this.togglePaymentInterfaceSettings.bind(this));
         },
 
         /**
@@ -422,6 +423,15 @@
         },
 
         /**
+         * Checks if the payment interface is set to "hosted payment pages"
+         * 
+         * @returns {boolean}
+         */
+        isHppEnabled: function () {
+            return document.querySelector(this.getPaymentInterfaceSelector())?.value === "hosted payment page";
+        },
+
+        /**
          * Toggle gateway credentials settings
          */
         toggleCredentialsSettings: function () {
@@ -440,6 +450,25 @@
             }
 
             this.toggleRequiredSettings();
+        },
+
+        /**
+         * Toggles all the Hpp radio CSS display properties
+         * 
+         */
+        togglePaymentInterfaceSettings: function() {
+            let hppSelected = this.isHppEnabled();
+
+            let toggleHppSetting = (selecter, show) => document.querySelectorAll(selecter).forEach(function(input) {
+                let parentGroup = input.closest('.form-group');
+                
+                if (parentGroup) {
+                    parentGroup.style.display = (show ? "block": "none");
+                }
+            });
+            toggleHppSetting('input[type="radio"][id*="hpp"]', hppSelected);
+            toggleHppSetting(`input[type="radio"][id*="Blik"]:not([id*="hpp"]),
+                 input[type="radio"][id*="OpenBanking"]:not([id*="hpp"])`, !hppSelected);
         },
 
         toggleRequiredSettings: function () {
@@ -540,6 +569,13 @@
          */
         getCredentialsCheckButtonSelector: function () {
             return '#' + this.id + '_credentialsCheck';
+        },
+
+        /**
+         * Convenience function to get payment interface selector
+         */
+        getPaymentInterfaceSelector: function() {
+            return '#' + this.id + '_integrationType';
         },
 
         /**

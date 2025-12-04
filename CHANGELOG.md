@@ -4,7 +4,11 @@
 
 # Changelog
 
-## Latest Version - ## v1.7.5 (12/12/25)
+## Latest Version ## v1.8.0 (12/04/25)
+- Added Hosted Payment Pages to GPAPI
+- Improved order status handling for Poland APMs
+
+## v1.7.5 (11/12/25)
 - Added 3DS mandate, enables 3D secure authentication automatically in countries where it is a legal requirement.
 - Added validation to APM payment methods
 

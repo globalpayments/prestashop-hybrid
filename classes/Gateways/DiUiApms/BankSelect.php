@@ -16,6 +16,7 @@ use GlobalPayments\PaymentGatewayProvider\Gateways\GpApiGateway;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\CheckoutHelper;
 use GlobalPayments\PaymentGatewayProvider\Platform\{TransactionHistory, TransactionManagement, Utils};
 use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
+use Order;
 
 /**
  * Helper class for DiUi/PayU transactions
@@ -632,11 +633,12 @@ class BankSelect
      * Update order status based on payment notification
      */
     private static function updateOrderStatusFromNotification(
-        $order,
+        Order $order,
         $paymentStatus,
         $transactionId,
         $callbackData
-    ) {
+    ): void
+    {
         $statusUpper = strtoupper($paymentStatus);
 
         \PrestaShopLogger::addLog(
@@ -656,13 +658,17 @@ class BankSelect
             case 'CAPTURED':
             case 'COMPLETED':
                 // Check if order is not already processed
-                if (!in_array(
-                    $order->getCurrentState(),
-                    [
-                        \Configuration::get('PS_OS_PAYMENT'),
-                        \Configuration::get('PS_OS_WS_PAYMENT')
-                    ]
-                )) {
+                $paymentAcceptedAlready = false;
+                foreach ($order->getHistory($order->id_lang) as $entry) {
+                    if (
+                        in_array(
+                            $entry["id_order_state"],
+                            array(\Configuration::get('PS_OS_PAYMENT'), \Configuration::get('PS_OS_WS_PAYMENT'))
+                        )
+                    ) $paymentAcceptedAlready = true;
+                }
+
+                if (!$paymentAcceptedAlready) {
                     // Use PrestaShop's built-in logger
                     \PrestaShopLogger::addLog(
                         sprintf('Open Banking payment completed via status notification. %s', $callbackSummary),

@@ -33,6 +33,11 @@ use GlobalPayments\PaymentGatewayProvider\PaymentMethods\OpenBanking\BankPayment
 use GlobalPayments\PaymentGatewayProvider\Platform\Utils;
 use GlobalPayments\PaymentGatewayProvider\Requests;
 use GlobalPayments\PaymentGatewayProvider\Gateways\DiUiApms\{BankSelect, Blik};
+use GlobalPayments\PaymentGatewayProvider\Requests\IntegrationType;
+use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
+use GlobalPayments\Api\Entities\Transaction;
+use GlobalPayments\PaymentGatewayProvider\Requests\RequestArg;
+
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -137,6 +142,41 @@ class GpApiGateway extends AbstractGateway
     public $enableThreeDSecure;
 
     /**
+     * Enable Google Pay for HPP
+     *
+     * @var bool
+     */
+    public $hppEnableGooglePay;
+
+    /**
+     * Enable Apple Pay for HPP
+     *
+     * @var bool
+     */
+    public $hppEnableApplePay;
+
+    /**
+     * Enable BLIK for HPP
+     *
+     * @var bool
+     */
+    public $hppEnableBlik;
+
+    /**
+     * Enable Open Banking for HPP
+     *
+     * @var bool
+     */
+    public $hppEnableOpenBanking;
+
+      /**
+     * Enable Payu for HPP
+     *
+     * @var bool
+     */
+    public $hppEnablePayu;
+
+    /**
      * GpApiGateway constructor.
      */
     public function __construct()
@@ -153,11 +193,6 @@ class GpApiGateway extends AbstractGateway
 
     public function getFrontendGatewayOptions()
     {
-
-        if ($this->threeDSecureRequired()){
-          $this->enableThreeDSecure = 1;
-        }
-
         return [
             'apiVersion' => GpApiConnector::GP_API_VERSION,
             'accessToken' => $this->getAccessToken(),
@@ -187,6 +222,8 @@ class GpApiGateway extends AbstractGateway
                 ),
             ],
             'requireCardHolderName' => true,
+            'integrationMethod' => $this->integrationType,
+            'hppInitiatePaymentUrl' => $this->getValidNotificationUrl('initiateHppPayment'),
         ];
     }
 
@@ -216,24 +253,6 @@ class GpApiGateway extends AbstractGateway
 
     public function getGatewayFormFields()
     {
-
-        if ($this->threeDSecureRequired()){
-            $threeDSFields = [
-                'title' => $this->translator->trans('Enable 3D Secure', [], 'Modules.Globalpayments.Admin'),
-                'type' => 'hidden',
-                'default' => 1,
-                'description' => $this->translator->trans('3D Secure is required in your country and is enabled automatically', [], 'Modules.Globalpayments.Admin'),
-            ];
-        } else {
-            $threeDSFields = [
-                'title' => $this->translator->trans('Enable 3D Secure', [], 'Modules.Globalpayments.Admin'),
-                'type' => 'switch',
-                'default' => 1,
-                'description' => $this->translator->trans('3D Secure is optional in your country', [], 'Modules.Globalpayments.Admin'),
-            ];
-        }
-
-
         return [
             $this->id . '_isProduction' => [
                 'title' => $this->translator->trans('Live Mode', [], 'Modules.Globalpayments.Admin'),
@@ -279,10 +298,13 @@ class GpApiGateway extends AbstractGateway
                     'For assistance locating your account name, please contact our',
                     [],
                     'Modules.Globalpayments.Admin'
-                ) . ' <a href="https://developer.globalpay.com/support/integration-support" target="_blank">' . 
-                $this->translator->trans('Integration Support', [], 'Modules.Globalpayments.Admin') . 
+                ) . ' <a href="https://developer.globalpay.com/support/integration-support" target="_blank">' .
+                $this->translator->trans('Integration Support', [], 'Modules.Globalpayments.Admin') .
                 '</a> ' . $this->translator->trans('Team based on location.', [], 'Modules.Globalpayments.Admin'),
                 'skipConfigSave' => true,
+                'options' => [
+                    'select_account' => 'Select Account',
+                ],
             ],
             $this->id . '_appId' => [
                 'title' => $this->translator->trans('Live App Id', [], 'Modules.Globalpayments.Admin'),
@@ -315,10 +337,13 @@ class GpApiGateway extends AbstractGateway
                     'For assistance locating your account name, please contact our',
                     [],
                     'Modules.Globalpayments.Admin'
-                ) . ' <a href="https://developer.globalpay.com/support/integration-support" target="_blank">' . 
-                $this->translator->trans('Integration Support', [], 'Modules.Globalpayments.Admin') . 
+                ) . ' <a href="https://developer.globalpay.com/support/integration-support" target="_blank">' .
+                $this->translator->trans('Integration Support', [], 'Modules.Globalpayments.Admin') .
                 '</a> ' . $this->translator->trans('Team based on location.', [], 'Modules.Globalpayments.Admin'),
                 'skipConfigSave' => true,
+                'options' => [
+                    'select_account' => 'Select Account',
+                ],
             ],
             $this->id . '_credentialsCheck' => [
                 'title' => $this->translator->trans('Credentials Check', [], 'Modules.Globalpayments.Admin'),
@@ -352,12 +377,93 @@ class GpApiGateway extends AbstractGateway
                 ),
                 'default' => '',
             ],
-            $this->id . '_enableThreeDSecure' => $threeDSFields,
+            $this->id . '_enableThreeDSecure' => [
+                'title' => $this->translator->trans('Enable 3D Secure', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'default' => 1,
+            ],
+            $this->id . '_integrationType' => [
+                'title' => $this->translator->trans('Integration Type', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'description' => $this->translator->trans(
+                    'Choose whether payment form is displayed on the checkout (drop in UI), or on a hosted payment page.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => IntegrationType::DROP_IN_UI,
+                'options' => [
+                    IntegrationType::DROP_IN_UI => $this->translator->trans(
+                        'Drop-in UI',
+                        [],
+                        'Modules.Globalpayments.Admin'
+                    ),
+                    IntegrationType::HOSTED_PAYMENT_PAGE => $this->translator->trans(
+                        'Hosted Payment Page',
+                        [],
+                        'Modules.Globalpayments.Admin'
+                    ),
+                ],
+            ],
+            $this->id . '_hppEnableGooglePay' => [
+                'title' => $this->translator->trans('HPP: Enable Google Pay', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable Google Pay as a payment option in the Hosted Payment Page',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ],
+            $this->id . '_hppEnableApplePay' => [
+                'title' => $this->translator->trans('HPP: Enable Apple Pay', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable Apple Pay as a payment option in the Hosted Payment Page',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ],
+            $this->id . '_hppEnableBlik' => [
+                'title' => $this->translator->trans('HPP: Enable BLIK', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable BLIK as a payment option in the Hosted Payment Page',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ],
+            $this->id . '_hppEnableOpenBanking' => [
+                'title' => $this->translator->trans('HPP: Enable Open Banking', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable Open Banking as a payment option in the Hosted Payment Page',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ],
+            $this->id . '_hppEnablePayu' => [
+                'title' => $this->translator->trans('HPP: Enable Payu', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable Payu as a payment option in the Hosted Payment Page',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ],
         ];
     }
 
     public function securePaymentFieldsConfiguration()
     {
+        // For HPP mode, no card fields are needed - payment happens on hosted page
+        if ($this->integrationType === IntegrationType::HOSTED_PAYMENT_PAGE) {
+            return [];
+        }
+
         $fields = [
             'payment-form' => [
 				'class'       => 'payment-form'
@@ -437,6 +543,14 @@ class GpApiGateway extends AbstractGateway
     /**
      * {@inheritdoc}
      */
+    public function getPaymentOptions($module, $params, $isCheckout)
+    {
+        return parent::getPaymentOptions($module, $params, $isCheckout);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function enqueuePaymentScripts($module)
     {
         if (!$this->enabled) {
@@ -453,7 +567,7 @@ class GpApiGateway extends AbstractGateway
             $path . '/views/css/globalpayments-secure-payment-fields.css'
         );
 
-        // added this 28th March to fix js caching
+        // added this 28th March
         $context->controller->registerJavascript(
             'globalpayments',
             'https://js.globalpay.com/' . Utils::getJsLibVersion() . '/globalpayments'
@@ -540,6 +654,53 @@ class GpApiGateway extends AbstractGateway
 
         return parent::processPayment( $order_id );
     }
+    
+    /**
+     * Process HPP (Hosted Payment Page) payment
+     *
+     * Initiates a payment on the GP-API hosted payment page and returns
+     * a transaction object containing the redirect URL.
+     *
+     * Follows the same pattern as Magento HPP implementation:
+     * - Uses InitiatePaymentRequest with ASYNC_PAYMENT_DATA
+     * - Returns Transaction with payByLinkResponse->url
+     * - Order completion happens in hppReturn controller after redirect
+     *
+     * @param Order $order Order model with payment details
+     * @param int $orderId PrestaShop order ID
+     * @return \GlobalPayments\Api\Entities\Transaction Transaction with redirect URL
+     * @throws \GlobalPayments\Api\Entities\Exceptions\ApiException If API call fails
+     */
+    public function processHppPayment(Order $order, int $orderId): Transaction
+    {
+        // Prepare HPP endpoints for callback
+        $context = \Context::getContext();
+        $hppEndpoints = [
+            'returnUrl' => $context->link->getModuleLink('globalpayments', 'hppReturn', [], true),
+            'statusUrl' => $context->link->getModuleLink('globalpayments', 'hppStatus', [], true),
+            'cancelUrl' => $context->link->getPageLink('order', true), // Return to checkout on cancel
+        ];
+
+        // Create HPP initiate payment request
+        $request = $this->prepareRequest(Requests\TransactionType::HPP_TRANSACTION, $order);
+
+        // Set additional arguments after request creation
+        $request->setArguments([
+            RequestArg::ORDER_ID => $orderId,
+            RequestArg::CART_ID => $order->cartId,
+            RequestArg::AMOUNT => $order->amount,
+            RequestArg::CURRENCY => $order->currency,
+            RequestArg::BILLING_ADDRESS => $order->billingAddress,
+            RequestArg::SHIPPING_ADDRESS => $order->shippingAddress,
+            RequestArg::ASYNC_PAYMENT_DATA => $hppEndpoints,
+        ]);
+
+        // Use client's submitRequest method which calls doRequest() directly
+        // This bypasses the normal SdkClient transaction builder flow
+        $transaction = $this->client->submitRequest($request);
+
+        return $transaction;
+    }
 
     /**
      * Get valid notification URL for development/production
@@ -573,21 +734,5 @@ class GpApiGateway extends AbstractGateway
         }
 
         return $url;
-    }
-
-    public function threeDSecureRequired() {
-        if (empty(\Configuration::get('PS_SHOP_COUNTRY_ID'))) {
-            $countryISO = \Country::getIsoById(\Configuration::get('PS_COUNTRY_DEFAULT'));
-        } else {
-            $countryISO = \Country::getIsoById(\Configuration::get('PS_SHOP_COUNTRY_ID'));
-        }
-
-        $three_d_secure_required_countries = array(
-            "AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE",
-            "GR","GB","HU","IE","IM","IT","LV","LT","LU","MT","NL",
-            "PL","PT","RO","SK","SI","ES","SE","IS","LI","NO","JP","IN"
-        );
-
-        return in_array($countryISO, $three_d_secure_required_countries );
     }
 }

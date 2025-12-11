@@ -314,7 +314,6 @@ class GlobalPaymentsHppReturnModuleFrontController extends AbstractUrl
     ): string {
         $storeName = $this->getStoreName();
         $storeLogo = $this->getStoreLogo();
-        $globalPaymentsLogo = $this->getGlobalPaymentsLogo();
 
         $escapedTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
         $escapedHeading = htmlspecialchars($heading, ENT_QUOTES, 'UTF-8');
@@ -323,15 +322,12 @@ class GlobalPaymentsHppReturnModuleFrontController extends AbstractUrl
         $escapedLabel = htmlspecialchars($redirectLabel, ENT_QUOTES, 'UTF-8');
         $escapedStoreName = htmlspecialchars($storeName, ENT_QUOTES, 'UTF-8');
 
-               // Build header with logos
+        // Build header with store logo only
         $headerContent = '<div class="header">';
         if ($storeLogo) {
             $headerContent .= '<img src="' . htmlspecialchars($storeLogo, ENT_QUOTES, 'UTF-8') . '" alt="' . $escapedStoreName . '" class="logo">';
         } else {
             $headerContent .= '<h1 class="store-name">' . $escapedStoreName . '</h1>';
-        }
-        if ($globalPaymentsLogo) {
-            $headerContent .= '<img src="' . htmlspecialchars($globalPaymentsLogo, ENT_QUOTES, 'UTF-8') . '" alt="GlobalPayments" class="logo">';
         }
         $headerContent .= '</div>';
 
@@ -531,27 +527,6 @@ class GlobalPaymentsHppReturnModuleFrontController extends AbstractUrl
             }
         } catch (\Exception $e) {
             $this->logError('Could not get store logo', ['error' => $e->getMessage()]);
-        }
-
-        return null;
-    }
-
-     /**
-     * Get GlobalPayments logo URL for branding
-     *
-     * @return string|null Logo URL or null if not available
-     */
-    private function getGlobalPaymentsLogo(): ?string
-    {
-        try {
-            // Verify file exists
-            $fullPath = _PS_MODULE_DIR_ . 'globalpayments/views/img/globalpayments-logo.png';
-
-            if (file_exists($fullPath)) {
-                return $this->context->link->getBaseLink() . '/modules/globalpayments/views/img/globalpayments-logo.png';
-            }
-        } catch (\Exception $e) {
-            $this->logError('Could not get GlobalPayments logo', ['error' => $e->getMessage()]);
         }
 
         return null;

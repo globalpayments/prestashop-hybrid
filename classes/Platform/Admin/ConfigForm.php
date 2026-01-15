@@ -153,7 +153,7 @@ class ConfigForm
             'message' => $message,
         ]);
 
-        return $this->module->display($this->path, '/views/templates/admin/display_confirmation.tpl');
+        return $this->module->display($this->path, 'views/templates/admin/display_confirmation.tpl');
     }
 
     /**
@@ -173,7 +173,7 @@ class ConfigForm
             'gateways' => $this->paymentMethods,
         ]);
 
-        return $this->module->display($this->path, '/views/templates/admin/configure.tpl');
+        return $this->module->display($this->path, 'views/templates/admin/configure.tpl');
     }
 
     /**

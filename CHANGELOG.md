@@ -4,7 +4,11 @@
 
 # Changelog
 
-## Latest Version ## v1.8.1 (12/11/25)
+## Latest Version ## v1.8.2 (15/01/26)
+- Added fix for hpp payment method
+- Added fix of path for GP-API
+
+## v1.8.1 (12/11/25)
 - Fixed bug for HPP Removed Global Payments Logo from success/declined modal
 
 ## v1.8.0 (12/04/25)

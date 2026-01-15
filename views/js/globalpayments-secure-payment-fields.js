@@ -100,7 +100,8 @@
                 const isHppEnabled = that.isHppEnabled();
                 $(helper.getPlaceOrderButtonSelector()).on('click', function ($e) {
                     // For HPP mode, use AJAX to prevent raw JSON error display
-                    if (isHppEnabled) {
+                    var paymentMethodSelected = $('.payment-options input.ps-shown-by-js:checked').attr('data-module-name');
+                    if (isHppEnabled && paymentMethodSelected === 'globalpayments_ucp') {
                         $e.preventDefault();
                         $e.stopImmediatePropagation();
                         

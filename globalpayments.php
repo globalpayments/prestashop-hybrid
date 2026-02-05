@@ -99,7 +99,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '1.8.2';
+        $this->version = '1.8.3';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
@@ -577,7 +577,7 @@ class GlobalPayments extends PaymentModule
             );
 
             $this->context->controller->addJS(
-                'https://js.globalpay.com/3.0.11/globalpayments'
+                'https://js.globalpay.com/' . Utils::getJsLibVersion() . '/globalpayments'
                 . (defined('_PS_MODE_DEV_') && _PS_MODE_DEV_ ? '' : '.min') . '.js'
             );
 

@@ -3,8 +3,10 @@
 </a>
 
 # Changelog
+## Latest Version ## v1.8.3 (02/05/26)
+- Upgraded GlobalPayments.js library to v4.1.17 and centralized version management
 
-## Latest Version ## v1.8.2 (15/01/26)
+## v1.8.2 (01/15/26)
 - Added fix for hpp payment method
 - Added fix of path for GP-API
 

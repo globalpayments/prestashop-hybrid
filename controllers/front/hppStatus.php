@@ -68,8 +68,7 @@ class GlobalPaymentsHppStatusModuleFrontController extends AbstractUrl
     {
         try {
             // Get signature from headers and raw POST data (webhook format)
-            $headers = getallheaders();
-            $gpSignature = $headers['X-GP-Signature'] ?? $headers['x-gp-signature'] ?? null;
+            $gpSignature = $this->hppResponseParser->obtainSignature();
             $rawInput = trim(file_get_contents('php://input'));
 
 

@@ -174,6 +174,32 @@ class HppResponseParser
 
         return $gatewayData;
     }
+
+    /**
+     * Gets the header signature
+     * @return string Signature string if found, if not ""
+     */
+    public function obtainSignature(): string
+    {
+        $signature = "";
+	if ( !empty ( $_REQUEST['X-GP-Signature'] ) ) {
+		$signature = (string) $_REQUEST['X-GP-Signature'];
+	} else {
+		if( function_exists( 'getallheaders' ) ){
+			$headers = getallheaders();
+			$signature = ( isset( $headers['X-GP-Signature'] ) && !empty($headers['X-GP-Signature'] ) ) ? 
+			$headers['X-GP-Signature'] : '';
+		}
+			
+		//Final attempt to get the signature
+		if( "" === $signature && isset( $_SERVER['HTTP_X_GP_SIGNATURE'] ) && 
+		!empty( $_SERVER['HTTP_X_GP_SIGNATURE'] ) ){
+			$signature = (string) $_SERVER['HTTP_X_GP_SIGNATURE'];
+		}
+	}
+        return $signature;
+    }
+
     /**
      * Get error message from gateway response
      *

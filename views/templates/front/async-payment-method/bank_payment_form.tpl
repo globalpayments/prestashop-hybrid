@@ -12,7 +12,7 @@
 * @license   LICENSE
 *}
 
-<form class="globalpayments-async-payment" action="{$action|escape:'html':'UTF-8'}" id="{$id|escape:'html':'UTF-8'}-payment-form" method="post">
+<form class="globalpayments-async-payment" action="{$action|escape:'html':'UTF-8'}" id="{$id|escape:'html':'UTF-8'}-async-payment-form" method="post">
     <div id="{$id|escape:'htmlall':'UTF-8'}"></div>
     <input type="hidden" name="payment-method-id" value="{$id|escape:'htmlall':'UTF-8'}" />
     <div class="bank-logo-container">

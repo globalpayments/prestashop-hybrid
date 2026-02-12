@@ -116,7 +116,7 @@ class InitiatePaymentRequest extends AbstractRequest
 
         // Create reference text
         $shopName = \Configuration::get('PS_SHOP_NAME') ?: 'PrestaShop Store';
-        $refText = $shopName . ' Order #' . $orderId;
+        $refText = $this->limitRefText($shopName . ' Order #' . $orderId);
 
         // Create payer details
         $payer = $this->createPayerDetails($customerData, $billingAddress, $shippingAddress);
@@ -390,6 +390,23 @@ class InitiatePaymentRequest extends AbstractRequest
         }
 
         return $cleaned;
+    }
+
+    /**
+     * Limits the payment referance text to 50 characters 
+     * @param string Referance text
+     * @return string Either the original text or the last 50 characters of 
+     * the referance text
+     */
+    protected function limitRefText($refText): string
+    {
+        if (mb_strlen($refText) > 50) {
+            //Return the last 50 characters of the text
+            //This will retain the order ID
+            return mb_substr($refText, -50);
+        }
+
+        return $refText;
     }
 
     /**

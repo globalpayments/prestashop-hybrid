@@ -74,8 +74,7 @@ class GlobalPaymentsHppReturnModuleFrontController extends AbstractUrl
         $checkoutHelper = new CheckoutHelper($this->module, $this->context->cart);
 
         try {
-            // Get the GP signature from headers and raw POST data
-            $gpSignature = getallheaders()['X-GP-Signature'] ?? null;
+            $gpSignature = $this->hppResponseParser->obtainSignature();
             $rawInput = trim(file_get_contents('php://input'));
 
             // Validate the request (HPP-specific signature validation)

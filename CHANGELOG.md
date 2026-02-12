@@ -3,7 +3,13 @@
 </a>
 
 # Changelog
-## Latest Version ## v1.8.3 (02/05/26)
+## Latest Version ## v1.8.4 (02/11/26)
+- Redone admin JS
+- Applied unique Id's to all payment forms
+- Improvements to GP API HPP gateway signature validation
+- Fixed bug related to order reference text string length greater than GP API will accept
+
+## v1.8.3 (02/05/26)
 - Upgraded GlobalPayments.js library to v4.1.17 and centralized version management
 
 ## v1.8.2 (01/15/26)

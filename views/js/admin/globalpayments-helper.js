@@ -155,7 +155,9 @@
             var tokenId = this.getTokenId(id);
 
             var checkoutForms = [
-                'form#' + id + '-payment-form',
+                'form#' + id + '-card-payment-form',
+                'form#' + id + '-async-payment-form',
+                'form#' + id + '-dw-payment-form',
                 'form.globalpayments-save-card'
             ];
             var forms = document.querySelectorAll(checkoutForms.join(','));

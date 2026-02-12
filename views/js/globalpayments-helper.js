@@ -191,7 +191,10 @@
             var tokenId = this.getTokenId(id);
 
             if (!tokenId) {
-                return document.querySelector('form#' + id + '-payment-form');
+                let form = document.querySelector('form#' + id + "-card-payment-form") ||
+                           document.querySelector('form#' + id + "-async-payment-form") ||
+                           document.querySelector('form#' + id + "-dw-payment-form");
+                return form;
             }
 
             var forms = document.querySelectorAll('form.globalpayments-save-card');

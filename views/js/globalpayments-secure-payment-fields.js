@@ -249,7 +249,7 @@
                 }
 
                 this.cardForm = GlobalPayments.creditCard.form(
-                    '#' + this.id + '-' + this.fieldOptions['payment-form'].class,
+                    '#' + this.id + '-card-' + this.fieldOptions['payment-form'].class,
                     formConfig
                 )
             } else {

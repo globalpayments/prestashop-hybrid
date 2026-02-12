@@ -45,6 +45,9 @@
                 
                 // Auto-check credentials on page load
                 self.autoCheckCredentialsOnLoad();
+
+                 //Show approprate APM options on pageload, based on paymentInterface option
+                self.togglePaymentInterfaceSettings();
             });
         },
 

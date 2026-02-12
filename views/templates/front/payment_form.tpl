@@ -12,18 +12,22 @@
 * @license   LICENSE
 *}
 
-<form action="{$action|escape:'html':'UTF-8'}" class="{$id|escape:'html':'UTF-8'}-payment-form globalpayments-payment-form" id="{$id|escape:'html':'UTF-8'}-payment-form" method="post">
+<form action="{$action|escape:'html':'UTF-8'}" class="{$id|escape:'html':'UTF-8'}-payment-form globalpayments-payment-form" id="{$id|escape:'html':'UTF-8'}-card-payment-form" method="post">
     <input type="hidden" name="payment-method-id" value="{$id|escape:'htmlall':'UTF-8'}" />
     {foreach from=$formData item=formItem}
         <div class="globalpayments {$id|escape:'html':'UTF-8'} {$formItem['class']|escape:'html':'UTF-8'}">
-            <label for="{$id|escape:'html':'UTF-8'}-{$formItem['class']|escape:'html':'UTF-8'}">
-                {$formItem['label']|escape:'html':'UTF-8'}
-                {if false}<span class="required"> *</span>{/if}
-            </label>
+            {if !empty($formItem['label'])}
+                <label for="{$id|escape:'html':'UTF-8'}-{$formItem['class']|escape:'html':'UTF-8'}">
+                    {$formItem['label']|escape:'html':'UTF-8'}
+                    {if false}<span class="required"> *</span>{/if}
+                </label>
+            {/if}
             <div id="{$id|escape:'html':'UTF-8'}-{$formItem['class']|escape:'html':'UTF-8'}"></div>
-            <ul class="globalpayments-validation-error" style="display: none;">
-                <li>{$formItem['messages']['validation']|escape:'html':'UTF-8'}</li>
-            </ul>
+            {if !empty($formItem['messages']['validation'])}
+                <ul class="globalpayments-validation-error" style="display: none;">
+                    <li>{$formItem['messages']['validation']|escape:'html':'UTF-8'}</li>
+                </ul>
+            {/if}
         </div>
     {/foreach}
     {if $allowCardSaving}

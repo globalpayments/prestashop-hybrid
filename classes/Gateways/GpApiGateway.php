@@ -466,8 +466,12 @@ class GpApiGateway extends AbstractGateway
 
         $fields = [
             'payment-form' => [
-				'class'       => 'payment-form'
-            ]
+			'class'       => 'payment-form',
+	                'label'       => "",
+	                'messages'    => [
+	                    'validation' => ""
+	                ]
+            	]
         ];
 
         return $fields;

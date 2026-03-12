@@ -177,6 +177,13 @@ class GpApiGateway extends AbstractGateway
     public $hppEnablePayu;
 
     /**
+     * Enable Installment Plans
+     *
+     * @var bool
+     */
+    public $enableInstallments;
+
+    /**
      * GpApiGateway constructor.
      */
     public function __construct()
@@ -199,6 +206,8 @@ class GpApiGateway extends AbstractGateway
             'enableThreeDSecure' => $this->enableThreeDSecure,
             'enableBlikPayment' => $this->enableBlikPayment,
             'enableOpenBanking' => $this->enableOpenBanking,
+            'enableInstallments' => $this->enableInstallments,
+            'installmentsAccountName' => $this->getCredentialSetting('accountName'),
             'env' => $this->isProduction ? parent::ENVIRONMENT_PRODUCTION : parent::ENVIRONMENT_SANDBOX,
             'fieldValidation' => [
                 'enabled' => true,
@@ -230,6 +239,7 @@ class GpApiGateway extends AbstractGateway
     public function getBackendGatewayOptions()
     {
         $country = new \Country((int) \Configuration::get('PS_COUNTRY_DEFAULT'));
+        $currency = new \Currency((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
 
         return [
             'appId' => $this->getCredentialSetting('appId'),
@@ -238,10 +248,12 @@ class GpApiGateway extends AbstractGateway
             'channel' => Channel::CardNotPresent,
             'developerId' => $this->developerId,
             'country' => $country->iso_code,
+            'currency' => $currency->iso_code,
             'environment' => $this->isProduction ? Environment::PRODUCTION : Environment::TEST,
             'methodNotificationUrl' => $this->getValidNotificationUrl('methodNotification'),
             'challengeNotificationUrl' => $this->getValidNotificationUrl('challengeNotification'),
             'merchantContactUrl' => $this->merchantContactUrl,
+            'enableInstallments' => $this->enableInstallments,
             'dynamicHeaders' => [
                 'x-gp-platform' => 'prestashop;version=' . _PS_VERSION_,
                 'x-gp-extension' => 'globalpayments-prestashop;version='
@@ -253,6 +265,15 @@ class GpApiGateway extends AbstractGateway
 
     public function getGatewayFormFields()
     {
+        $defaultCountryId = (int) \Configuration::get('PS_COUNTRY_DEFAULT');
+        $defaultCurrencyId = (int) \Configuration::get('PS_CURRENCY_DEFAULT');
+        $defaultCountry = new \Country($defaultCountryId);
+        $defaultCurrency = new \Currency($defaultCurrencyId);
+        $isMxInstallmentsEligible = (
+            strtoupper((string) $defaultCountry->iso_code) === 'MX'
+            && strtoupper((string) $defaultCurrency->iso_code) === 'MXN'
+        );
+
         return [
             $this->id . '_isProduction' => [
                 'title' => $this->translator->trans('Live Mode', [], 'Modules.Globalpayments.Admin'),
@@ -454,6 +475,19 @@ class GpApiGateway extends AbstractGateway
                 ),
                 'default' => 0,
             ],
+            $this->id . '_enableInstallments' => $isMxInstallmentsEligible ? [
+                'title' => $this->translator->trans('Enable Installments', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable installment payment option for customers',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ] : [
+                'type' => 'hidden',
+                'default' => 0,
+            ],
         ];
     }
 
@@ -466,12 +500,12 @@ class GpApiGateway extends AbstractGateway
 
         $fields = [
             'payment-form' => [
-			'class'       => 'payment-form',
-	                'label'       => "",
-	                'messages'    => [
-	                    'validation' => ""
-	                ]
-            	]
+				'class'       => 'payment-form',
+				'label'       => '',
+				'messages'    => [
+					'validation' => ''
+				]
+            ]
         ];
 
         return $fields;

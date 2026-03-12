@@ -99,7 +99,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '1.8.4';
+        $this->version = '1.9.0';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
@@ -509,6 +509,7 @@ class GlobalPayments extends PaymentModule
         Media::addJsDef([
             'globalpayments_admin_params' => [
                 'credentialsCheckUrl' => $this->configForm->getCredentialsCheckUrl(),
+                'defaultCurrency' => $this->context->currency->iso_code ?? 'USD',
                 'messages' => [
                     'appId' => $this->getTranslator()->trans(
                         'Please enter an App ID',
@@ -545,11 +546,25 @@ class GlobalPayments extends PaymentModule
         ]);
 
         // Add order data for refund validation if we're on an order page
-        if (isset($_GET['id_order']) && Tools::getValue('controller') === 'AdminOrders') {
-            $orderId = (int) Tools::getValue('id_order');
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+        $legacyController = Tools::getValue('controller') ?: Tools::getValue('tab');
+        $isLegacyOrderPage = $legacyController === 'AdminOrders';
+        $orderId = (int) Tools::getValue('id_order');
+
+        if ($orderId <= 0 && (int) Tools::getValue('orderId') > 0) {
+            $orderId = (int) Tools::getValue('orderId');
+        }
+
+        if ($orderId <= 0 && preg_match('~(?:^|/)(?:index\.php/)?sell/orders/(\d+)/view~', $requestUri, $matches)) {
+            $orderId = (int) $matches[1];
+        }
+
+        if ($orderId > 0 && ($isLegacyOrderPage || strpos($requestUri, '/sell/orders/') !== false)) {
             $order = new Order($orderId);
             
             if ($order && $order->module === $this->name) {
+                $orderAdditionalInfo = new OrderAdditionalInfo();
+                $installmentHistory = $orderAdditionalInfo->getAdditionalInfo($orderId, 'installment_history');
                 // Get already refunded amount
                 $alreadyRefunded = 0.00;
                 $orderSlips = OrderSlip::getOrdersSlip($order->id_customer, $order->id);
@@ -566,6 +581,7 @@ class GlobalPayments extends PaymentModule
                         'alreadyRefunded' => $alreadyRefunded,
                         'remainingRefundable' => (float) $order->total_paid - $alreadyRefunded,
                         'currency' => (new Currency($order->id_currency))->iso_code,
+                        'installmentHistory' => $installmentHistory,
                     ],
                 ]);
             }
@@ -628,6 +644,11 @@ class GlobalPayments extends PaymentModule
             $path . '/views/js/globalpayments-observe-place-order-button.js'
         );
 
+        $this->context->controller->registerJavascript(
+            'saved-card-tooltip',
+            $path . '/views/js/saved-card-tooltip.js'
+        );
+
         foreach ($this->activePaymentMethods as $paymentMethod) {
             $paymentMethod->enqueuePaymentScripts($this);
         }
@@ -642,6 +663,7 @@ class GlobalPayments extends PaymentModule
                 'globalpayments_helper_params' => [
                     'order' => [
                         'amount' => $gpUcpOrder->amount,
+                        'amountDecimal' => number_format((float) $gpUcpOrder->amount, 2, '.', ''),
                         'currency' => $gpUcpOrder->currency,
                         'billingAddress' => $gpUcpOrder->billingAddress,
                         'shippingAddress' => $gpUcpOrder->shippingAddress,
@@ -875,8 +897,15 @@ class GlobalPayments extends PaymentModule
 
     public function hookDisplayCustomerAccount()
     {
+        $activeGateway = $this->getActiveGateway();
+        
+        // Only show stored cards link if allowCardSaving is enabled
+        if (!$activeGateway || !$activeGateway->allowCardSaving) {
+            return;
+        }
+        
         $this->context->smarty->assign([
-            'activeGateway' => $this->getActiveGateway(),
+            'activeGateway' => $activeGateway,
             'title' => (new Utils())->getCardStorageText(),
         ]);
 

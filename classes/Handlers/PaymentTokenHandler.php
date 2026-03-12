@@ -26,11 +26,27 @@ class PaymentTokenHandler extends AbstractHandler
 {
     public function handle()
     {
-        if (!$this->request->getArgument(RequestArg::REQUEST_MULTI_USE_TOKEN) || !$this->response->token) {
+        if (!$this->request->getArgument(RequestArg::REQUEST_MULTI_USE_TOKEN)) {
+            return;
+        }
+
+        // Get the multi-use token from response or from request card data
+        $multiUseToken = $this->response->token;
+        
+        // If response doesn't have token, get it from the payment method ID in request
+        if (empty($multiUseToken) && $this->request->getArgument(RequestArg::CARD_DATA)) {
+            $cardData = $this->request->getArgument(RequestArg::CARD_DATA);
+            // The paymentReference is the payment method ID (PMT_xxx) created by GlobalPayments.js
+            if (isset($cardData->paymentReference)) {
+                $multiUseToken = $cardData->paymentReference;
+            }
+        }
+
+        if (empty($multiUseToken)) {
             return;
         }
 
         (new PaymentTokenData($this->request->getArguments()))
-            ->saveNewToken($this->response->token, $this->response->cardBrandTransactionId);
+            ->saveNewToken($multiUseToken, $this->response->cardBrandTransactionId);
     }
 }

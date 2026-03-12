@@ -14,12 +14,14 @@
  */
 
 use GlobalPayments\Api\Entities\Exceptions\GatewayException;
+use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\PaymentGatewayProvider\Data\Order as OrderModel;
 use GlobalPayments\PaymentGatewayProvider\Data\PaymentTokenData;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethodFactory;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\AddressHelper;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\CheckoutHelper;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\OrderStateHelper;
+use GlobalPayments\PaymentGatewayProvider\Platform\OrderAdditionalInfo;
 use GlobalPayments\PaymentGatewayProvider\Platform\Utils;
 use GlobalPayments\PaymentGatewayProvider\Requests\IntegrationType;
 
@@ -172,6 +174,14 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
                 $orderPayment->card_expiration = $cardDetails->expiryMonth . '/' . $cardDetails->expiryYear;
                 $orderPayment->card_holder = $order->cardHolderName;
                 $orderPayment->save();
+            }
+
+            $currentOrder = Order::getByCartId($cart->id);
+            if (
+                Validate::isLoadedObject($currentOrder)
+                && !empty($transaction->installment)
+            ) {
+                $this->addInstallmentOrderHistoryMessage($currentOrder, $transaction);
             }
 
             $this->checkoutHelper->getSuccessPage($this->module->currentOrder);
@@ -347,6 +357,54 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
         $msg->id_order = $order->id;
         $msg->private = 1;
         $msg->add();
+    }
+
+    /**
+     * Add installment payment details to order history
+     *
+     * @param \Order $order
+     * @param Transaction $transaction
+     * @return void
+     */
+    private function addInstallmentOrderHistoryMessage(\Order $order, Transaction $transaction): void
+    {
+        $orderId = $order->id;
+ 
+        $response = $transaction->responseCode
+            ?? ($transaction->responseCode === '00' ? $this->module->l('Approved') : null)
+            ?? ($transaction->responseCode ?? $this->module->l('Approved'));
+
+        $authCode = $transaction->authorizationCode
+            ?? ($transaction->transactionReference->authCode ?? null)
+            ?? 'N/A';
+
+        $installment = $transaction->installment;
+        $installmentCount = (int) $installment->count;
+        
+        $message = sprintf(
+            $this->module->l(
+                'Order id: %s | Response: %s | Auth code: %s | Installments number: %s'
+            ),
+            $orderId,
+            $response,
+            $authCode,
+            $installmentCount . ' installments'
+            
+        );
+
+        $orderAdditionalInfo = new OrderAdditionalInfo();
+        $orderAdditionalInfo->setAdditionalInfo(
+            (int) $order->id,
+            'installment_history',
+            [
+                'orderId' => $orderId,
+                'response' => $response,
+                'authCode' => $authCode,
+                'installments' => $installmentCount . ' installments',
+                'message' => $message,
+                'createdAt' => date('Y-m-d H:i:s'),
+            ]
+        );
     }
 
     /**

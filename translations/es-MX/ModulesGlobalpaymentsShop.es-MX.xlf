@@ -168,6 +168,11 @@
         <target>Aún no has registrado ninguna tarjeta.</target>
         <note>Line: </note>
       </trans-unit>
+      <trans-unit id="a8f3e9c4b5d6a7e8f9c0d1e2f3a4b5c6">
+        <source>For card-based installment payment options, please enter your card information below.</source>
+        <target>Para opciones de pago a Meses sin Intereses por favor ingresa abajo la información de la tarjeta.</target>
+        <note>Line: </note>
+      </trans-unit>
     </body>
   </file>
 </xliff>

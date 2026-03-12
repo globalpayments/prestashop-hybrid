@@ -27,13 +27,31 @@ class GetAccessTokenRequest extends AbstractRequest
     {
         // to check request is from Admin or User(frontend)
         parent::__construct($order, $config);
-        if($_POST) {
-            $this->data[RequestArg::SERVICES_CONFIG]['permissions'] = [
-            '',
-        ]; } else {
-            $this->data[RequestArg::SERVICES_CONFIG]['permissions'] = [
-            'PMT_POST_Create_Single',
-			];
+        
+        // If request is from admin (credentials check), use empty permissions to retrieve all accounts
+        if (!empty($_POST)) {
+            $this->data[RequestArg::SERVICES_CONFIG]['permissions'] = [''];
+        } else {
+            // For frontend payment flow, set specific permissions
+            $permissions = array(
+                'PMT_POST_Create_Single',
+            );
+
+            $country = $config['country'] ?? null;
+            $currency = $config['currency'] ?? null;
+            $isMxCountry = is_string($country) && strtoupper($country) === 'MX';
+            $isMxnCurrency = is_string($currency) && strtoupper($currency) === 'MXN';
+            $isMxMxn = $isMxCountry && $isMxnCurrency;
+
+            // Add installments-related permissions if installments is enabled or MX/MXN is used
+            if ($isMxMxn || (!empty($config['enableInstallments']) && $config['enableInstallments'] === true)) {
+                $permissions = array_merge(
+                    $permissions,
+                    array('INS_POST_Query', 'BIN_GET_Details', 'PMT_POST_Create')
+                );
+            }
+
+            $this->data[RequestArg::SERVICES_CONFIG]['permissions'] = array_values(array_unique($permissions));
         }
     }
 

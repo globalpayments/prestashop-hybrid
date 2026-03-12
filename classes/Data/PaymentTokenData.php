@@ -70,9 +70,17 @@ class PaymentTokenData
         $token = $this->getSingleUseToken();
 
         if (!empty($token)) {
-            // a card number should only have a single token stored
+            // Remove duplicate cards based on card details (last4, expiry, type) OR same payment reference
             foreach ($currentTokens as $t) {
-                if ($t->paymentReference === $multiUseToken) {
+                $isDuplicateToken = ($t->paymentReference === $multiUseToken);
+                $isDuplicateCard = (
+                    $t->details->last4 === $token->getLast4() &&
+                    $t->details->expiryYear === $token->getExpiryYear() &&
+                    $t->details->expiryMonth === $token->getExpiryMonth() &&
+                    strtolower($t->details->cardType) === strtolower($token->getCardType())
+                );
+                
+                if ($isDuplicateToken || $isDuplicateCard) {
                     Token::delete($t->id_globalpayments_token);
                 }
             }

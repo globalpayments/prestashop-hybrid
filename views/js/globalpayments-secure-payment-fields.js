@@ -228,6 +228,27 @@
                 }
             }
 
+            // Add Installments configuration if enabled and using drop-in UI
+            let installmentsEnabled = (this.isInstallmentsEnabled() === true) ? true : false;
+
+            if (installmentsEnabled && gatewayConfig.accessToken) {
+                // Use baseCurrency/baseCountry from gatewayOptions, fallback to MXN/MX
+                var baseCurrency = this.gatewayOptions.baseCurrency || 'MXN';
+                var baseCountry = this.gatewayOptions.baseCountry || 'MX';
+                
+                gatewayConfig.installments = {
+                    currency: baseCurrency,
+                    country: baseCountry,
+                    allowedCardNetworks: [
+                        GlobalPayments.enums.CardNetwork.Visa
+                    ]
+                };
+
+                if (this.gatewayOptions.installmentsAccountName) {
+                    gatewayConfig.installments.accountName = this.gatewayOptions.installmentsAccountName;
+                }
+            }
+
             // ensure the submit button's parent is on the page as this is added
             // only after the initial page load
             if ($(helper.getSubmitButtonTargetSelector(this.id)).length === 0) {
@@ -242,8 +263,13 @@
                     style: "gp-default"
                 };
 
-                // Only add amount and apms when BLIK is enabled
-                if (apmsEnabled) {
+                // Add amount for APMs and installments separately to avoid cross-impact
+                if (installmentsEnabled) {
+                    var installmentsAmount = this.order.amountDecimal
+                        ? this.order.amountDecimal
+                        : '0';
+                    formConfig.amount = this.toMinorUnitsAmount(installmentsAmount);
+                } else if (apmsEnabled) {
                     formConfig.amount = this.order.amount ? this.order.amount : '0';
                     formConfig.apms = [];
                 }
@@ -700,6 +726,31 @@
          */
         isOpenBankingEnabled: function () {
             return this.gatewayOptions.enableOpenBanking;
+        },
+
+        /**
+         * States whether the installments is enabled.
+         *
+         * @returns {Boolean}
+         */
+        isInstallmentsEnabled: function () {
+            return this.gatewayOptions.enableInstallments;
+        },
+
+        /**
+         * Converts a currency amount to minor units (e.g., 871.40 -> 87140)
+         *
+         * @param {string|number} amount
+         * @returns {string}
+         */
+        toMinorUnitsAmount: function (amount) {
+            var numericAmount = parseFloat(amount);
+
+            if (isNaN(numericAmount)) {
+                return '0';
+            }
+
+            return Math.round(numericAmount * 100).toString();
         },
 
         /**

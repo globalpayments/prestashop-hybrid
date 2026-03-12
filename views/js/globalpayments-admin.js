@@ -42,6 +42,7 @@
                     self.attachEvents();
                 });
                 self.setPayForOrderButton();
+                self.renderInstallmentHistoryInPaymentDetails();
                 
                 // Auto-check credentials on page load
                 self.autoCheckCredentialsOnLoad();
@@ -49,6 +50,114 @@
                  //Show approprate APM options on pageload, based on paymentInterface option
                 self.togglePaymentInterfaceSettings();
             });
+        },
+
+        /**
+         * Render GlobalPayments installment history details inside payment details (Admin Orders view)
+         */
+        renderInstallmentHistoryInPaymentDetails: function () {
+            if (typeof globalpayments_order_data === 'undefined' || !globalpayments_order_data) {
+                return;
+            }
+
+            var historyData = globalpayments_order_data.installmentHistory;
+            if (!historyData || !historyData.message) {
+                return;
+            }
+
+            var installments = historyData.installments || '';
+            if (!installments || installments === 'N/A') {
+                return;
+            }
+
+            var tableBody = $('table[data-role="payments-grid-table"] tbody');
+            if (
+                !tableBody.length
+                || tableBody.find('[data-role="globalpayments-installment-note"]').length
+            ) {
+                return;
+            }
+
+            var message = historyData.message || '';
+            var createdAt = historyData.createdAt || '';
+            var createdAtText = '';
+
+            if (createdAt) {
+                var parsedDate = new Date(createdAt.replace(' ', 'T'));
+                createdAtText = isNaN(parsedDate.getTime()) ? createdAt : parsedDate.toLocaleString();
+            }
+
+            var $detailsRow = tableBody.find('tr[data-role="payment-details"]').first();
+            if (!$detailsRow.length) {
+                return;
+            }
+
+            var $detailsCell = $detailsRow.find('td').first();
+            if (!$detailsCell.length) {
+                return;
+            }
+
+            var $noteLabelLine = $('<p/>', {
+                class: 'mb-0 globalpayments-installment-note',
+                'data-role': 'globalpayments-installment-note'
+            });
+            $noteLabelLine.append($('<strong/>').text('Order History Notes'));
+
+            var parts = message.split(' | ');
+            var $noteContainer = $('<div/>', { class: 'mt-2' });
+            $noteContainer.append($noteLabelLine);
+
+            var createLabelLine = function (label, value) {
+                var $line = $('<p/>', { class: 'mb-0' });
+                $line.append($('<strong/>').text(label + ':'));
+                if (value) {
+                    $line.append(' ' + value);
+                }
+                return $line;
+            };
+
+            for (var i = 0; i < parts.length; i++) {
+                var part = parts[i].trim();
+                if (!part) {
+                    continue;
+                }
+                var $line = $('<p/>', { class: 'mb-0' });
+                var separatorIndex = part.indexOf(':');
+                if (separatorIndex > -1) {
+                    var label = part.slice(0, separatorIndex).trim();
+                    var value = part.slice(separatorIndex + 1).trim();
+                    var normalizedLabel = label.toLowerCase();
+                    if (
+                        normalizedLabel === 'order id'
+                        && value.indexOf('TRN_') === 0
+                        && globalpayments_order_data.orderId
+                    ) {
+                        $noteContainer.append(
+                            createLabelLine(
+                                'Order id',
+                                String(globalpayments_order_data.orderId)
+                            )
+                        );
+                        continue;
+                    }
+                    if (normalizedLabel === 'transaction id') {
+                        continue;
+                    }
+                    $noteContainer.append(createLabelLine(label, value));
+                } else {
+                    $line.text(part);
+                    $noteContainer.append($line);
+                }
+            }
+
+            if (createdAtText) {
+                var $createdLine = $('<p/>', { class: 'mb-0' });
+                $createdLine.append($('<strong/>').text('Created at:'));
+                $createdLine.append(' ' + createdAtText);
+                $noteContainer.append($createdLine);
+            }
+
+            $detailsCell.append($noteContainer);
         },
 
         /**
@@ -62,13 +171,14 @@
             }
             this.toggleCredentialsSettings();
             this.toggleRequiredSettings();
+            this.togglePaymentInterfaceSettings();
             this.loadPaymentMethodTabsHash();
             this.syncAccountNameFields();
             this.attachCredentialChangeHandlers();
             $(document).on('click', this.getLiveModeSelector(), this.toggleCredentialsSettings.bind(this));
             $(document).on('click', this.getEnableSelector(), this.toggleRequiredSettings.bind(this));
             $(document).on('click', this.getCredentialsCheckButtonSelector(), this.checkApiCredentials.bind(this));
-            $(document).on('click', this.getPaymentInterfaceSelector(), this.togglePaymentInterfaceSettings.bind(this));
+            $(document).on('change', this.getPaymentInterfaceSelector(), this.togglePaymentInterfaceSettings.bind(this));
         },
 
         /**
@@ -472,6 +582,44 @@
             toggleHppSetting('input[type="radio"][id*="hpp"]', hppSelected);
             toggleHppSetting(`input[type="radio"][id*="Blik"]:not([id*="hpp"]),
                  input[type="radio"][id*="OpenBanking"]:not([id*="hpp"])`, !hppSelected);
+            
+            // Toggle Installments field visibility (only for Drop-in UI and Mexico currency)
+            let installmentsField = document.querySelector('input[type="radio"][id*="enableInstallments"]');
+            if (installmentsField) {
+                let installmentsRow = installmentsField.closest('.form-group');
+                if (installmentsRow) {
+                    // Check if store's default currency is MXN (Mexican Peso)
+                    let isMexicanCurrency = this.isStoreCurrencyMXN();
+                    // Show only if: Drop-in UI is selected AND currency is MXN
+                    let shouldShow = !hppSelected && isMexicanCurrency;
+                    installmentsRow.style.display = shouldShow ? 'block' : 'none';
+                }
+            }
+        },
+
+        /**
+         * Check if the store's default currency is Mexican Peso (MXN)
+         * 
+         * @returns {boolean}
+         */
+        isStoreCurrencyMXN: function() {
+            // Check admin params passed from PHP
+            if (this.adminParams && this.adminParams.defaultCurrency) {
+                return this.adminParams.defaultCurrency === 'MXN';
+            }
+            
+            // Fallback: check global prestashop object
+            if (
+                typeof prestashop !== 'undefined'
+                && prestashop.currency
+                && prestashop.currency.iso_code
+            ) {
+                return prestashop.currency.iso_code === 'MXN';
+            }
+            
+            // If we can't determine currency, hide installments by default for safety
+            // Only show if explicitly MXN
+            return false;
         },
 
         toggleRequiredSettings: function () {

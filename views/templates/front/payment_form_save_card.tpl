@@ -12,7 +12,7 @@
 * @license   LICENSE
 *}
 
-<form class="globalpayments-save-card globalpayments-{$cardId|escape:'htmlall':'UTF-8'}" action="{$action|escape:'html':'UTF-8'}" method="post">
+<form class="globalpayments-save-card globalpayments-{$cardId|escape:'htmlall':'UTF-8'}" id="{$id|escape:'html':'UTF-8'}-payment-form-{$cardId|escape:'htmlall':'UTF-8'}" action="{$action|escape:'html':'UTF-8'}" method="post">
     <input type="hidden" name="payment-method-id" value="{$id|escape:'htmlall':'UTF-8'}" />
     <input type="hidden" name="globalpayments-payment-method" value="{$cardId|escape:'htmlall':'UTF-8'}" />
 </form>

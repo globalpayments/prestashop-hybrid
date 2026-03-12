@@ -28,6 +28,7 @@ use GlobalPayments\PaymentGatewayProvider\Platform\Token;
 use GlobalPayments\PaymentGatewayProvider\Platform\Utils;
 use GlobalPayments\PaymentGatewayProvider\Platform\Validator\Admin\Config\Validation as ConfigValidation;
 use GlobalPayments\PaymentGatewayProvider\Requests;
+use GlobalPayments\PaymentGatewayProvider\Requests\IntegrationType;
 use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
 use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 use PrestaShopBundle\Translation\TranslatorComponent as Translator;
@@ -188,6 +189,13 @@ abstract class AbstractGateway implements GatewayInterface
      */
     public $enableOpenBanking;
 
+    /**
+     * States whether the Installments payment method should be enabled
+     *
+     * @var bool
+     */
+    public $enableInstallments = false;
+
     public function __construct()
     {
         $this->client = new SdkClient();
@@ -301,6 +309,19 @@ abstract class AbstractGateway implements GatewayInterface
         $currency = new \Currency((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
 
         return $country->iso_code === 'PL' && $currency->iso_code === 'PLN';
+    }
+
+    /**
+     * Check if the store is configured for Mexico with MXN currency
+     *
+     * @return bool
+     */
+    private function isMexicoWithMXNCurrency()
+    {
+        $country = new \Country((int) \Configuration::get('PS_COUNTRY_DEFAULT'));
+        $currency = new \Currency((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+
+        return $country->iso_code === 'MX' && $currency->iso_code === 'MXN';
     }
 
     /**
@@ -906,7 +927,10 @@ abstract class AbstractGateway implements GatewayInterface
         return new $request(
             $order,
             array_merge(
-                ['gatewayProvider' => $this->getGatewayProvider()],
+                [
+                    'gatewayProvider' => $this->getGatewayProvider(),
+                    'integrationMethod' => $this->integrationType,
+                ],
                 $backendGatewayOptions
             )
         );
@@ -1077,7 +1101,7 @@ abstract class AbstractGateway implements GatewayInterface
 
         $paymentOptions[] = $paymentOption;
 
-        if (!$customer->is_guest) {
+        if (!$customer->is_guest && $this->allowCardSaving) {
             $this->getStoredCardsPaymentOptions($module, $customer, $formAction, $cardPaymentOptions);
         }
 
@@ -1111,6 +1135,8 @@ abstract class AbstractGateway implements GatewayInterface
                 'action' => $formAction,
                 'cardId' => $card->id_globalpayments_token,
                 'id' => $this->id,
+                'enableInstallments' => $this->enableInstallments,
+                'allowCardSaving' => $this->allowCardSaving,
             ]);
 
             $paymentText = $this->translator->trans(
@@ -1128,12 +1154,31 @@ abstract class AbstractGateway implements GatewayInterface
             $paymentOption = new PaymentOption();
             $paymentOption
                 ->setModuleName($this->id)
-                ->setCallToActionText($paymentText)
-                ->setForm(
-                    $context->smarty->fetch(
-                        'module:globalpayments/views/templates/front/payment_form_save_card.tpl'
-                    )
+                ->setCallToActionText($paymentText);
+
+            // Add tooltip for installments - only for Drop-in UI, not HPP, and only for Mexico with MXN currency
+            if ($this->enableInstallments 
+                && $this->allowCardSaving 
+                && strtolower($this->integrationType) === IntegrationType::DROP_IN_UI
+                && $this->isMexicoWithMXNCurrency()
+            ) {
+                $tooltipText = $this->translator->trans(
+                    'For card-based installment payment options, please enter your card information below.',
+                    [],
+                    'Modules.Globalpayments.Shop'
                 );
+                $tooltipHtml = '<span class="globalpayments-installment-tooltip-wrapper">'
+                    . '<span class="globalpayments-tooltip-icon">?</span>'
+                    . '<span class="globalpayments-tooltip-text">' . $tooltipText . '</span>'
+                    . '</span>';
+                $paymentOption->setAdditionalInformation($tooltipHtml);
+            }
+
+            $paymentOption->setForm(
+                $context->smarty->fetch(
+                    'module:globalpayments/views/templates/front/payment_form_save_card.tpl'
+                )
+            );
 
             $cardOptions[] = $paymentOption;
         }

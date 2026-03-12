@@ -15,36 +15,55 @@
 
 namespace GlobalPayments\PaymentGatewayProvider\Clients;
 
-use GlobalPayments\Api\Builders\TransactionBuilder;
-use GlobalPayments\Api\Builders\TransactionReportBuilder;
-use GlobalPayments\Api\Entities\Address;
-use GlobalPayments\Api\Entities\Enums\AddressType;
-use GlobalPayments\Api\Entities\Enums\CardType;
-use GlobalPayments\Api\Entities\Enums\GatewayProvider;
-use GlobalPayments\Api\Entities\Enums\Secure3dStatus;
+use GlobalPayments\Api\Builders\{
+    TransactionBuilder,
+    TransactionReportBuilder
+};
+use GlobalPayments\Api\Entities\{
+    Address,
+    StoredCredential,
+    Transaction
+};
+use GlobalPayments\Api\Entities\Enums\{
+    AddressType,
+    CardType,
+    GatewayProvider,
+    Secure3dStatus,
+    StoredCredentialInitiator,
+    StoredCredentialSequence,
+    StoredCredentialType
+};
 use GlobalPayments\Api\Entities\Exceptions\ApiException;
 use GlobalPayments\Api\Entities\GpApi\AccessTokenInfo;
-use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\Api\Gateways\IPaymentGateway;
 use GlobalPayments\Api\PaymentMethods\CreditCardData;
 use GlobalPayments\Api\ServiceConfigs\AcceptorConfig;
-use GlobalPayments\Api\ServiceConfigs\Gateways\GeniusConfig;
-use GlobalPayments\Api\ServiceConfigs\Gateways\GpApiConfig;
-use GlobalPayments\Api\ServiceConfigs\Gateways\PorticoConfig;
-use GlobalPayments\Api\ServiceConfigs\Gateways\TransitConfig;
-use GlobalPayments\Api\Services\ReportingService;
-use GlobalPayments\Api\Services\Secure3dService;
+use GlobalPayments\Api\ServiceConfigs\Gateways\{
+    GeniusConfig,
+    GpApiConfig,
+    PorticoConfig,
+    TransitConfig
+};
+use GlobalPayments\Api\Services\{
+    ReportingService,
+    Secure3dService
+};
 use GlobalPayments\Api\ServicesContainer;
-use GlobalPayments\Api\Utils\Logging\Logger;
-use GlobalPayments\Api\Utils\Logging\SampleRequestLogger;
-use GlobalPayments\PaymentGatewayProvider\Platform\Utils;
-use GlobalPayments\PaymentGatewayProvider\Requests\RequestArg;
-use GlobalPayments\PaymentGatewayProvider\Requests\RequestInterface;
+use GlobalPayments\Api\Utils\Logging\{
+    Logger,
+    SampleRequestLogger
+};
+use GlobalPayments\PaymentGatewayProvider\Platform\{
+    Token,
+    Utils
+};
+use GlobalPayments\PaymentGatewayProvider\Requests\{
+    IntegrationType,
+    RequestArg,
+    RequestInterface,
+    TransactionType
+};
 use GlobalPayments\PaymentGatewayProvider\Requests\ThreeDSecure\AbstractAuthenticationsRequest;
-use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
-use GlobalPayments\Api\Entities\StoredCredential;
-use GlobalPayments\Api\Entities\Enums\StoredCredentialInitiator;
-use GlobalPayments\PaymentGatewayProvider\Platform\Token;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -242,13 +261,75 @@ class SdkClient implements ClientInterface
 
           if ($token !== null) {
                 $is_first = empty($token->id_globalpayments_token);
+                
+                // Check if save card functionality is enabled (checkbox for new card)
+                $saveCardEnabled = $this->hasArgument(RequestArg::REQUEST_MULTI_USE_TOKEN)
+                    && $this->getArgument(RequestArg::REQUEST_MULTI_USE_TOKEN);
+                
+                // Check if using an existing saved card
+                $usingSavedCard = $this->hasArgument(RequestArg::MULTI_USE_TOKEN_ID)
+                    && !empty($this->getArgument(RequestArg::MULTI_USE_TOKEN_ID));
+                
+                // Check if installments are enabled in the service config
+                $config = $this->getArgument(RequestArg::SERVICES_CONFIG);
+                $currency = $this->getArgument(RequestArg::CURRENCY) ?? null;
+                $isMxnCurrency = is_string($currency) && strtoupper($currency) === 'MXN';
 
-                $storedCredential = new StoredCredential();
-                $storedCredential->initiator = StoredCredentialInitiator::PAYER;
-                $storedCredential->type = 'UNSCHEDULED';
-                $storedCredential->sequence = $is_first ? 'FIRST' : 'SUBSEQUENT';
+                $integrationMethod = $config['integrationMethod'] ?? ($config['integrationType'] ?? null);
+                $isDropInUi = is_string($integrationMethod)
+                    && strtolower($integrationMethod) === IntegrationType::DROP_IN_UI;
 
-                $this->builderArgs['storedCredential'] = [$storedCredential];
+                $installmentsEnabled = !empty($config['enableInstallments'])
+                    && $config['enableInstallments']
+                    && $isMxnCurrency
+                    && $isDropInUi;
+
+                // Send stored_credential when: 1) saving new card OR 2) using saved card
+                if ($saveCardEnabled || $usingSavedCard) {
+
+                    $storedCredential = new StoredCredential();
+                    $storedCredential->initiator = StoredCredentialInitiator::PAYER;
+                    
+                    // Only use INSTALLMENT type when there's actual installment data in the transaction
+                    // Otherwise use UNSCHEDULED even if installments feature is enabled
+                    $hasInstallmentData = $installmentsEnabled && !empty($token->installment);
+                    $storedCredential->type = $hasInstallmentData ? 
+                        StoredCredentialType::INSTALLMENT : StoredCredentialType::UNSCHEDULED;
+                    
+                    // For saved cards, always use SUBSEQUENT; for new cards, check if first
+                    $storedCredential->sequence = $usingSavedCard ? StoredCredentialSequence::SUBSEQUENT
+                        : ($is_first ? StoredCredentialSequence::FIRST : StoredCredentialSequence::SUBSEQUENT);
+
+                    // For MX/MXN, contract_reference is required when stored credentials are sent
+                    if (empty($storedCredential->contract_reference)) {
+                        if ($this->hasArgument(RequestArg::CART_ID)) {
+                            $storedCredential->contract_reference = 'CART#' . $this->getArgument(RequestArg::CART_ID);
+                        } elseif ($this->hasArgument(RequestArg::ORDER_ID)) {
+                            $storedCredential->contract_reference = 'ORDER#' . $this->getArgument(RequestArg::ORDER_ID);
+                        }
+                    }
+
+                    $this->builderArgs['storedCredential'] = [$storedCredential];
+                }
+                
+                // Add installment data if present in token response (regardless of save card)
+                if ($installmentsEnabled && !empty($token->installment)) {
+                    $installmentData = new \GlobalPayments\Api\Entities\InstallmentData();
+                    
+                    // Map installment data from GlobalPayments.js response
+                    if (!empty($token->installment->installmentId)) {
+                        $installmentData->id = $token->installment->installmentId;
+                    }
+                    
+                    if (!empty($token->installment->installmentReference)) {
+                        $installmentData->reference = $token->installment->installmentReference;
+                    }
+                    
+                    // Only add installment if we have id or reference
+                    if (!empty($installmentData->id) || !empty($installmentData->reference)) {
+                        $this->builderArgs['installment'] = [$installmentData];
+                    }
+                }
             }
         }
 
@@ -336,28 +417,8 @@ class SdkClient implements ClientInterface
             $this->cardData->entryMethod = $this->getArgument(RequestArg::ENTRY_MODE);
         }
 
-        $userId = \Context::getContext()->customer->id;
-        $already_saved = false;
-
-        $gatewayId = $this->getArgument(RequestArg::GATEWAY_PROVIDER_ID);
-        $existing_tokens = Token::getCustomerTokens($userId, $gatewayId);
-
-        foreach ($existing_tokens as $existing_token) {
-            if (
-                isset($existing_token->details->last4, $existing_token->details->expiryMonth, $existing_token->details->expiryYear) &&
-                isset($token->details->cardLast4, $token->details->expiryMonth, $token->details->expiryYear) &&
-                $existing_token->details->last4 === $token->details->cardLast4 &&
-                $existing_token->details->expiryMonth === $token->details->expiryMonth &&
-                $existing_token->details->expiryYear === $token->details->expiryYear
-            ) {
-                $already_saved = true;
-                break;
-            }
-        }
-
-        if (!$already_saved) {
-            $this->builderArgs['requestMultiUseToken'] = [true];
-        }
+        // Note: requestMultiUseToken should be passed from REQUEST_MULTI_USE_TOKEN argument
+        // based on user's checkbox selection, not automatically set here
     }
 
     protected function threeDSecureEnabled()

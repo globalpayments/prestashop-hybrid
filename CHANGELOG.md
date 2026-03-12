@@ -3,7 +3,10 @@
 </a>
 
 # Changelog
-## Latest Version ## v1.8.4 (02/11/26)
+## Latest Version ## v1.9.0 (03/12/26)
+- Added Support for Installment Payment Plans for LATAM Market
+
+## v1.8.4 (02/11/26)
 - Redone admin JS
 - Applied unique Id's to all payment forms
 - Improvements to GP API HPP gateway signature validation

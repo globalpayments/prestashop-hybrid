@@ -197,6 +197,7 @@
                 // Use baseCurrency/baseCountry from gatewayOptions, fallback to PLN/PL
                 var baseCurrency = this.gatewayOptions.baseCurrency || 'PLN';
                 var baseCountry = this.gatewayOptions.baseCountry || 'PL';
+
                 gatewayConfig.apms = {
                     currencyCode: baseCurrency,
                     countryCode: baseCountry,
@@ -228,6 +229,11 @@
                 }
             }
 
+            // Add transaction region configuration if set to europe
+            if (gatewayConfig.dataResidency === 'EU') {
+                gatewayConfig.dataResidency = 'EU';
+            }
+            
             // Add Installments configuration if enabled and using drop-in UI
             let installmentsEnabled = (this.isInstallmentsEnabled() === true) ? true : false;
 

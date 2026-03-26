@@ -3,7 +3,10 @@
 </a>
 
 # Changelog
-## Latest Version ## v1.9.0 (03/12/26)
+## Latest Version ## v1.9.1 (03/26/26)
+- Added Support for US and EU GP API endpoint
+
+## v1.9.0 (03/12/26)
 - Added Support for Installment Payment Plans for LATAM Market
 
 ## v1.8.4 (02/11/26)

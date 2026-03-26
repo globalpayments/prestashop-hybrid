@@ -41,12 +41,14 @@ class ConfigurationController extends FrameworkBundleAdminController
         $environment = (int) $request->get('isLiveMode') === 0 ? Environment::TEST : Environment::PRODUCTION;
         $appId = $request->get('appId');
         $appKey = $request->get('appKey');
+        $dataResidency = $request->get('dataResidency','NONE');
         $gateway = new GpApiGateway();
 
         $configData = [
             'environment' => $environment,
             'appId' => $appId,
             'appKey' => $appKey,
+            'dataResidency' => $dataResidency
         ];
 
         try {

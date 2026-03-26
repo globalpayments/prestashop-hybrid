@@ -785,6 +785,31 @@ Exemple : FR|GB|IE]]></target>
         <target>Une erreur est survenue, veuillez réessayer plus tard.</target>
         <note>Line: </note>
       </trans-unit>
+      <trans-unit id="fd0a4728c4a4c0d72b4aaa24e185f211">
+        <source>Transaction Region</source>
+        <target>Region de transaction</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b785ae1a55b4c0633803a8efdcc0e4ec">
+        <source>Select where transactions are processed. This controls the GP API host for sandbox and live transactions.</source>
+        <target>Selectionnez l'endroit ou les transactions sont traitees. Ceci controle l'hote GP API pour sandbox et live.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="eb3c98f03b4361329c0dc2aac01da189">
+        <source>Global (default)</source>
+        <target>Global (par défaut)</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="912d59cdf1d3f551fae21f6f0062258f">
+        <source>Europe</source>
+        <target>Europe</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="a1f1891e18f942388f71e35e2fb33bb7">
+        <source>Current Endpoint:</source>
+        <target>Point de terminaison actuel :</target>
+        <note>Line: </note>
+      </trans-unit>
     </body>
   </file>
 </xliff>

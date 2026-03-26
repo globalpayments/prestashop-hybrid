@@ -49,6 +49,10 @@
 
                  //Show approprate APM options on pageload, based on paymentInterface option
                 self.togglePaymentInterfaceSettings();
+
+                $(document).on('change', '#' + self.id + '_transactionRegion', function() {
+                    $('#' + self.id + '_sandboxAccountNameDropdown').empty();
+                });
             });
         },
 
@@ -312,14 +316,20 @@
                 return; // Don't proceed if credentials are missing
             }
 
+            var transactionRegion = self.getCredentialSetting('transactionRegion');
+            var dataResidency = (transactionRegion && transactionRegion.toLowerCase() === 'europe') ? 'EU' : undefined;
+            var ajaxData = {
+                isLiveMode: self.getLiveModeInputValue(),
+                appId: appId,
+                appKey: appKey
+            };
+            if (dataResidency) {
+                ajaxData.dataResidency = dataResidency;
+            }
             $.ajax({
                 type: 'POST',
                 url: self.adminParams.credentialsCheckUrl,
-                data: {
-                    isLiveMode: self.getLiveModeInputValue(),
-                    appId: appId,
-                    appKey: appKey
-                },
+                data: ajaxData,
                 showLoader: false, // Don't show loader for auto-check
             }).done(function (result) {
                 if (!result.error && result.accountName && result.accountName.length > 0) {
@@ -353,6 +363,17 @@
                 errors.push(self.messages.appKey);
             }
 
+            var transactionRegion = this.getCredentialSetting('transactionRegion');
+            var dataResidency = (transactionRegion && transactionRegion.toLowerCase() === 'europe') ? 'EU' : undefined;
+            var ajaxData = {
+                isLiveMode: self.getLiveModeInputValue(),
+                appId: appId,
+                appKey: appKey
+            };
+            if (dataResidency) {
+                ajaxData.dataResidency = dataResidency;
+            }
+            
             if (errors.length > 0) {
                 alert(errors.join('\n'));
 
@@ -365,11 +386,7 @@
             $.ajax({
                 type: 'POST',
                 url: self.adminParams.credentialsCheckUrl,
-                data: {
-                    isLiveMode: self.getLiveModeInputValue(),
-                    appId: appId,
-                    appKey: appKey
-                },
+                data: ajaxData,
                 showLoader: true,
             }).done(function (result) {
                 if (result.error) {
@@ -401,6 +418,9 @@
                 // Handle special case for accountName in sandbox mode
                 if (setting === 'accountName') {
                     element = $('#' + this.id + '_sandboxAccountName');
+                } 
+                else if (setting === 'transactionRegion') {
+                    element = $('#' + this.id + '_transactionRegion');
                 } else {
                     element = $('#' + this.id + '_sandbox' + this.capitalizeFirstLetter(setting));
                 }

@@ -200,12 +200,13 @@ class GpApiGateway extends AbstractGateway
 
     public function getFrontendGatewayOptions()
     {
-        return [
+         return [
             'apiVersion' => GpApiConnector::GP_API_VERSION,
             'accessToken' => $this->getAccessToken(),
             'enableThreeDSecure' => $this->enableThreeDSecure,
             'enableBlikPayment' => $this->enableBlikPayment,
             'enableOpenBanking' => $this->enableOpenBanking,
+            'dataResidency' => (\Configuration::get($this->id . '_transactionRegion') == 'europe') ? 'EU' : 'NONE',
             'enableInstallments' => $this->enableInstallments,
             'installmentsAccountName' => $this->getCredentialSetting('accountName'),
             'env' => $this->isProduction ? parent::ENVIRONMENT_PRODUCTION : parent::ENVIRONMENT_SANDBOX,
@@ -244,6 +245,7 @@ class GpApiGateway extends AbstractGateway
         return [
             'appId' => $this->getCredentialSetting('appId'),
             'appKey' => $this->getCredentialSetting('appKey'),
+            'dataResidency' => (\Configuration::get($this->id . '_transactionRegion') == 'europe') ? 'EU' : 'NONE',
             'accountName' => $this->getCredentialSetting('accountName'),
             'channel' => Channel::CardNotPresent,
             'developerId' => $this->developerId,
@@ -289,6 +291,20 @@ class GpApiGateway extends AbstractGateway
                     'Modules.Globalpayments.Admin'
                 ),
                 'default' => 0,
+            ],
+            $this->id . '_transactionRegion' => [
+                'title' => $this->translator->trans('Transaction Region', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'description' => $this->translator->trans(
+                    'Select where transactions are processed. This controls the GP API host for sandbox and live transactions.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 'global',
+                'options' => [
+                    'global' => $this->translator->trans('Global (default)', [], 'Modules.Globalpayments.Admin'),
+                    'europe' => $this->translator->trans('Europe', [], 'Modules.Globalpayments.Admin'),
+                ],
             ],
             $this->id . '_sandboxAppId' => [
                 'title' => $this->translator->trans('Sandbox App Id', [], 'Modules.Globalpayments.Admin'),

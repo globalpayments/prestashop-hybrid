@@ -17,6 +17,7 @@ namespace GlobalPayments\PaymentGatewayProvider\Platform\Admin;
 
 use GlobalPayments\PaymentGatewayProvider\Gateways\AbstractGateway;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\AbstractPaymentMethod;
+use GlobalPayments\Api\Entities\Enums\ServiceEndpoints;
 use PrestaShopBundle\Translation\TranslatorComponent as Translator;
 
 if (!defined('_PS_VERSION_')) {
@@ -166,6 +167,18 @@ class ConfigForm
         $forms = $this->generateForms();
         $formKeys = array_keys($forms);
         $firstKey = $formKeys[0];
+
+        // Pass transaction endpoints to payment method when ID = globalpayments_ucp
+        foreach ($this->paymentMethods as $method) {
+            if ($method->id === 'globalpayments_ucp') {
+                $method->transactionEndpoints = [
+                    '%global_sandbox%' => ServiceEndpoints::GP_API_TEST,
+                    '%global_prod%' => ServiceEndpoints::GP_API_PRODUCTION,
+                    '%eu_sandbox%' => ServiceEndpoints::GP_API_TEST_EU,
+                    '%eu_prod%' => ServiceEndpoints::GP_API_PRODUCTION_EU,
+                ];
+            }
+        }
 
         $this->context->smarty->assign([
             'firstKey' => $firstKey,

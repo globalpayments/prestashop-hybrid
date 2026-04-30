@@ -398,7 +398,8 @@ abstract class AbstractGateway implements GatewayInterface
         ];
 
         // Add Blik Payment and Open Banking fields only for Poland with PLN currency
-        if ($this->isPolandWithPLNCurrency()) {
+        $apmExcludedGateways = ['globalpayments_genius', 'globalpayments_transit'];
+        if ($this->isPolandWithPLNCurrency() && !in_array($this->id, $apmExcludedGateways, true)) {
             $baseFields[$this->id . '_enableBlikPayment'] = [
                 'title' => $this->translator->trans('Enable Blik Payment', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'switch',
@@ -512,6 +513,7 @@ abstract class AbstractGateway implements GatewayInterface
                         'Modules.Globalpayments.Shop'
                     ),
                 ],
+                'required' => true,
             ],
             'card-expiry-field' => [
                 'class' => 'card-expiration',
@@ -524,6 +526,7 @@ abstract class AbstractGateway implements GatewayInterface
                         'Modules.Globalpayments.Shop'
                     ),
                 ],
+                'required' => true,
             ],
             'card-cvv-field' => [
                 'class' => 'card-cvv',
@@ -536,6 +539,7 @@ abstract class AbstractGateway implements GatewayInterface
                         'Modules.Globalpayments.Shop'
                     ),
                 ],
+                'required' => true,
             ],
         ];
     }
@@ -1086,7 +1090,7 @@ abstract class AbstractGateway implements GatewayInterface
 
         $context->smarty->assign([
             'action' => $formAction,
-            'formData' => $this->id === GatewayId::GP_UCP ? $this->securePaymentFieldsConfiguration() : [],
+            'formData' => ($this->id === GatewayId::GP_UCP || $this->id === GatewayId::TRANSIT) ? $this->securePaymentFieldsConfiguration() : [],
             'id' => $this->id,
             'allowCardSaving' => !$customer->is_guest && $this->allowCardSaving && $isCheckout,
             'envIndicator' => $this->environmentIndicatorActive(),

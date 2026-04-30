@@ -82,7 +82,6 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
 
         $this->checkoutHelper = new CheckoutHelper($this->module, $cart);
         $this->checkoutHelper->validate();
-
         $this->addressHelper = new AddressHelper();
         $currency = $this->context->currency;
         $paymentMethodId = Tools::getValue('payment-method-id');
@@ -111,6 +110,16 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
             && Tools::getValue($paymentMethodId . '-enable-vault') === 'on';
         $muTokenId = Tools::getIsset('globalpayments-payment-method') ?
             (int) Tools::getValue('globalpayments-payment-method') : null;
+
+        // Validate card data is present for card-based payments (skip for saved cards)
+        if (empty($muTokenId) && (empty($cardData) || empty($cardData->paymentReference))) {
+            $this->checkoutHelper->postResponse(
+                true,
+                '',
+                $this->trans('Card data is missing. Please try again.', [], 'Modules.Globalpayments.Shop')
+            );
+            return;
+        }
 
         try {
             $billingAddress = $this->addressHelper->getBillingAddress();
@@ -164,19 +173,57 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
                 false,
                 $customer->secure_key
             );
-            if (null === $muTokenId && $order->cardData) {
-                $currentOrder = Order::getByCartId($cart->id);
+
+            $currentOrder = Order::getByCartId($cart->id);
+
+            // Save card details for both new cards and saved cards
+            if ($order->cardData && Validate::isLoadedObject($currentOrder)) {
                 $orderPayment = OrderPayment::getByOrderReference($currentOrder->reference)[0];
                 $cardDetails = $order->cardData->details;
 
-                $orderPayment->card_number = $cardDetails->cardLast4;
-                $orderPayment->card_brand = $cardDetails->cardType;
-                $orderPayment->card_expiration = $cardDetails->expiryMonth . '/' . $cardDetails->expiryYear;
-                $orderPayment->card_holder = $order->cardHolderName;
+                // Handle different property names for new cards vs saved cards
+                if (null === $muTokenId) {
+                    // New card - uses cardLast4
+                    $orderPayment->card_number = $cardDetails->cardLast4 ?? '';
+                } else {
+                    // Saved card - uses last4
+                    $orderPayment->card_number = $cardDetails->last4 ?? '';
+                }
+                $orderPayment->card_brand = $cardDetails->cardType ?? '';
+                $expiryMonth = $cardDetails->expiryMonth ?? '';
+                $expiryYear = $cardDetails->expiryYear ?? '';
+                $orderPayment->card_expiration = ('' !== $expiryMonth && '' !== $expiryYear)
+                    ? $expiryMonth . '/' . $expiryYear
+                    : '';
+                $orderPayment->card_holder = $order->cardHolderName ?? '';
                 $orderPayment->save();
             }
 
             $currentOrder = Order::getByCartId($cart->id);
+            
+            if (Validate::isLoadedObject($currentOrder)) {
+                $paymentMethodFactory = new PaymentMethodFactory();
+                $allowedPaymentMethods = $paymentMethodFactory->getSupportedIds();
+                
+                if (!in_array($paymentMethodId, $allowedPaymentMethods, true)) {
+                    \PrestaShopLogger::addLog(
+                        sprintf(
+                            'Rejected unknown paymentMethodId "%s" for order %d',
+                            (string) $paymentMethodId,
+                            (int) $currentOrder->id
+                        ),
+                        3
+                    );
+                } else {
+                    $orderAdditionalInfo = new OrderAdditionalInfo();
+                    $orderAdditionalInfo->setAdditionalInfo(
+                        (int) $currentOrder->id,
+                        'paymentMethodId',
+                        $paymentMethodId
+                    );
+                }
+            }
+            
             if (
                 Validate::isLoadedObject($currentOrder)
                 && !empty($transaction->installment)
@@ -186,16 +233,17 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
 
             $this->checkoutHelper->getSuccessPage($this->module->currentOrder);
         } catch (GatewayException $e) {
+            $errorMsg = $this->utils->mapResponseCodeToFriendlyMessage($e->responseCode ?? '');
             $this->checkoutHelper->postResponse(
                 true,
                 '',
-                $this->utils->mapResponseCodeToFriendlyMessage()
+                $errorMsg ?: $e->getMessage()
             );
         } catch (Exception $e) {
             $this->checkoutHelper->postResponse(
                 true,
                 '',
-                $e->getMessage()
+                $e->getMessage() ?: 'An error occurred while processing the payment.'
             );
         }
     }

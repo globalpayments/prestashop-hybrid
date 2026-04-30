@@ -3,7 +3,13 @@
 </a>
 
 # Changelog
-## Latest Version ## v1.9.1 (03/26/26)
+## Latest Version ## v2.0.0 (04/30/26)
+- Added Support for TransIT gateway
+- GPAPI: Updates to gateway response header handling
+- GPAPI: VISA installments filtering for HPP 
+- Fixed a security vulnerability issues
+
+## v1.9.1 (03/26/26)
 - Added Support for US and EU GP API endpoint
 
 ## v1.9.0 (03/12/26)

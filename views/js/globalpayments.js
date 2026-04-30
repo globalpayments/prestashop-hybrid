@@ -1943,8 +1943,15 @@
 	                        pas_ccyear: year,
 	                    },
 	                };
-	                // todo: fix postMessage origin
-	                win.postMessage(JSON.stringify(request), "*");
+	                // Extract origin from URL for secure postMessage
+	                var targetOrigin;
+	                try {
+	                    var urlObj = new URL(url);
+	                    targetOrigin = urlObj.origin;
+	                } catch (e) {
+	                    return [2 /*return*/, Promise.reject("Invalid URL origin")];
+	                }
+	                win.postMessage(JSON.stringify(request), targetOrigin);
 	                // keep `pm.receive` call in callback version to ensure we receive the
 	                // hash request
 	                return [2 /*return*/, new Promise(function (resolve) {

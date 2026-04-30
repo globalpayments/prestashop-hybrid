@@ -95,7 +95,12 @@
 
         addTableRow: function(label, value) {
             var tableBody = this.getTableBody();
-            tableBody.append('<tr><th>' + label + '</th><td>' + value + '</td></tr>');
+            // Create DOM elements safely to prevent XSS
+            var row = $('<tr>');
+            var th = $('<th>').text(label);  // .text() automatically escapes HTML entities
+            var td = $('<td>').text(value);  // .text() automatically escapes HTML entities
+            row.append(th).append(td);
+            tableBody.append(row);
         },
 
         blockOnSubmit: function() {

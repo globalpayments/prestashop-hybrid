@@ -18,6 +18,7 @@ namespace GlobalPayments\PaymentGatewayProvider\Gateways;
 use GlobalPayments\Api\Entities\Enums\Channel;
 use GlobalPayments\Api\Entities\Enums\Environment;
 use GlobalPayments\Api\Entities\Enums\GatewayProvider;
+use GlobalPayments\Api\Entities\Enums\InstallmentsFundingMode;
 use GlobalPayments\Api\Entities\Enums\TransactionStatus;
 use GlobalPayments\Api\Entities\Reporting\TransactionSummary;
 use GlobalPayments\Api\Gateways\GpApiConnector;
@@ -169,7 +170,7 @@ class GpApiGateway extends AbstractGateway
      */
     public $hppEnableOpenBanking;
 
-      /**
+    /**
      * Enable Payu for HPP
      *
      * @var bool
@@ -423,7 +424,7 @@ class GpApiGateway extends AbstractGateway
                 'title' => $this->translator->trans('Integration Type', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'select',
                 'description' => $this->translator->trans(
-                    'Choose whether payment form is displayed on the checkout (drop in UI), or on a hosted payment page.',
+                    'Choose whether payment form is displayed on the checkout (drop in UI), or on a hosted payment page (HPP).',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -504,6 +505,36 @@ class GpApiGateway extends AbstractGateway
                 'type' => 'hidden',
                 'default' => 0,
             ],
+            $this->id . '_hppInstallmentsMaxMonths' => [
+                'title' => $this->translator->trans('HPP: Max number of months for installments', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'description' => $this->translator->trans(
+                    'Set the maximum number of months for installment payments (for use in HPP mode only)',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+                'options' => [
+                    0 => $this->translator->trans('Please Select', [], 'Modules.Globalpayments.Admin'),
+                    3 => '3',
+                    6 => '6',
+                    9 => '9',
+                    12 => '12',
+                    18 => '18',
+                    24 => '24',
+                ],
+            ],
+            $this->id . '_hppInstallmentsFundingMode' => [
+                'title' => $this->translator->trans('HPP: Installments Funding Mode', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'description' => $this->translator->trans(
+                    'Set the funding mode for installment payments (for use in HPP mode only, default is "Any")',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 'select',
+                'options' => $this->fetchInstallmentsFundingModes(),
+            ],
         ];
     }
 
@@ -516,11 +547,11 @@ class GpApiGateway extends AbstractGateway
 
         $fields = [
             'payment-form' => [
-				'class'       => 'payment-form',
-				'label'       => '',
-				'messages'    => [
-					'validation' => ''
-				]
+                'class'       => 'payment-form',
+                'label'       => '',
+                'messages'    => [
+                    'validation' => ''
+                ]
             ]
         ];
 
@@ -708,7 +739,7 @@ class GpApiGateway extends AbstractGateway
 
         return parent::processPayment( $order_id );
     }
-    
+
     /**
      * Process HPP (Hosted Payment Page) payment
      *
@@ -788,5 +819,22 @@ class GpApiGateway extends AbstractGateway
         }
 
         return $url;
+    }
+
+    /**
+     * Fetch installments funding modes and manipulate them for display
+     *
+     * @return string[]
+     */
+    private function fetchInstallmentsFundingModes(): array {
+        $refl = new \ReflectionClass('GlobalPayments\Api\Entities\Enums\InstallmentsFundingMode');
+
+        $options = ['select' => 'Please Select'];
+
+        foreach ($refl->getConstants() as $mode) {
+            $options[$mode] = ucfirst(strtolower(str_replace('_', ' ', $mode)));
+        }
+
+        return $options;
     }
 }

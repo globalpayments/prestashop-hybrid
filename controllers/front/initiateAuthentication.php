@@ -77,9 +77,18 @@ class GlobalPaymentsInitiateAuthenticationModuleFrontController extends ModuleFr
         try {
             $response = $gateway->processThreeDSecureInitiateAuthentication($order);
         } catch (Exception $e) {
+            // Log the actual error server-side for debugging
+            PrestaShopLogger::addLog(
+                'GlobalPayments 3DS Authentication Error: ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR,
+                $e->getCode(),
+                'GlobalPayments',
+                null,
+                true
+            );
             $response = [
                 'error' => true,
-                'message' => $e->getMessage(),
+                'message' => 'Unable to initiate authentication. Please try again or contact support.',
             ];
         }
 

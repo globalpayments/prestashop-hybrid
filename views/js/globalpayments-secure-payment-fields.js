@@ -88,6 +88,40 @@
 
     GlobalPaymentsPrestaShop.prototype = {
         /**
+         * Validates a redirect URL to prevent open redirect vulnerabilities
+         * 
+         * @param {string} url - The URL to validate
+         * @returns {string|null} - Returns validated relative URL or null if invalid
+         */
+        validateRedirectUrl: function(url) {
+            if (typeof url !== 'string' || !url) {
+                return null;
+            }
+            
+            try {
+                // If it's a relative URL (starts with / and not //), validate and return it
+                if (url.indexOf('/') === 0 && url.indexOf('//') !== 0) {
+                    // Additional validation: ensure it doesn't contain dangerous patterns
+                    if (url.match(/^\/[a-zA-Z0-9\/_\-\.?=&%#]+$/)) {
+                        return url;
+                    }
+                }
+                
+                // If it has a protocol, validate it's same-origin
+                var parsedUrl = new URL(url, window.location.origin);
+                if (parsedUrl.origin === window.location.origin && 
+                    parsedUrl.protocol === window.location.protocol) {
+                    // Return only the pathname+search+hash (strip origin for security)
+                    return parsedUrl.pathname + parsedUrl.search + parsedUrl.hash;
+                }
+            } catch (e) {
+                console.error('URL validation error:', e);
+            }
+            
+            return null;
+        },
+
+        /**
          * Add important event handlers for controlling the payment experience during checkout
          *
          * @returns
@@ -98,10 +132,27 @@
             // General
             $(document).ready(function (e) {
                 const isHppEnabled = that.isHppEnabled();
+
                 $(helper.getPlaceOrderButtonSelector()).on('click', function ($e) {
-                    // For HPP mode, use AJAX to prevent raw JSON error display
+                    // Get the currently selected payment method
                     var paymentMethodSelected = $('.payment-options input.ps-shown-by-js:checked').attr('data-module-name');
+                    
+                    // For HPP mode, use AJAX to prevent raw JSON error display
                     if (isHppEnabled && paymentMethodSelected === 'globalpayments_ucp') {
+                        $e.preventDefault();
+                        $e.stopImmediatePropagation();
+
+                        // Validate terms and conditions before processing
+                        if (!helper.validateTermsAndConditions(that.id)) {
+                            return false;
+                        }
+
+                        that.processHppPayment();
+                        return false;
+                    }
+                    
+                    // Handle Transit payment - need to tokenize first (unless using saved card)
+                    if (paymentMethodSelected === 'globalpayments_transit') {
                         $e.preventDefault();
                         $e.stopImmediatePropagation();
                         
@@ -110,7 +161,23 @@
                             return false;
                         }
                         
-                        that.processHppPayment();
+                        // Check if using a saved card - if so, skip tokenization and place order directly
+                        if (helper.getTokenId(that.id)) {
+                            helper.blockOnSubmit();
+                            helper.placeOrder(that.id);
+                            return false;
+                        }
+                        
+                        helper.blockOnSubmit();
+                        
+                        // Use the UIForm.submitForm() method to trigger tokenization
+                        if (that.cardForm && typeof that.cardForm.submitForm === 'function') {
+                            that.cardForm.submitForm();
+                        } else {
+                            helper.showPaymentError(that.id, 'Payment form not initialized. Please refresh the page.');
+                            helper.unblockOnError();
+                        }
+                        
                         return false;
                     }
                     
@@ -129,7 +196,7 @@
 
                     return true;
                 });
-                //Make Phone number required if 3DS is enabled and HPP mode is used. 
+                //Make Phone number required if 3DS is enabled and HPP mode is used.
                 if(isHppEnabled && that.isThreeDSecureEnabled()){
                     helper.enforcePhoneNumber();
                 }
@@ -158,8 +225,21 @@
          * @returns
          */
         renderPaymentFields: function (e) {
+            var gatewayConfig = this.gatewayOptions;
+            if (gatewayConfig.error) {
+                if (gatewayConfig.hide) {
+                    helper.hidePaymentMethod(this.id);
+                    return;
+                }
+                helper.showPaymentError(this.id, gatewayConfig.message);
+            }
+
             // For HPP mode, skip rendering payment fields entirely
             if (this.isHppEnabled()) {
+                if ($(helper.getSubmitButtonTargetSelector(this.id)).length === 0) {
+                    helper.createSubmitButtonTarget(this.id);
+                }
+
                 helper.toggleSubmitButtons();
                 return;
             }
@@ -177,23 +257,13 @@
                 return;
             }
 
-            var gatewayConfig = this.gatewayOptions;
-            if (gatewayConfig.error) {
-                if (gatewayConfig.hide) {
-                    console.error(gatewayConfig.message);
-                    helper.hidePaymentMethod(this.id);
-                    return;
-                }
-                helper.showPaymentError(this.id, gatewayConfig.message);
-            }
-
             // Add Blik configuration if enabled
             let acceptBlik = (this.isBlikPaymentEnabled() === true) ? true : false;
-             let acceptOpenBanking = (this.isOpenBankingEnabled() === true) ? true : false;
+            let acceptOpenBanking = (this.isOpenBankingEnabled() === true) ? true : false;
 
-             let apmsEnabled = (acceptBlik || acceptOpenBanking) ? true : false;
+            let apmsEnabled = (acceptBlik || acceptOpenBanking) ? true : false;
 
-             if (apmsEnabled) {
+            if (apmsEnabled) {
                 // Use baseCurrency/baseCountry from gatewayOptions, fallback to PLN/PL
                 var baseCurrency = this.gatewayOptions.baseCurrency || 'PLN';
                 var baseCountry = this.gatewayOptions.baseCountry || 'PL';
@@ -208,12 +278,12 @@
                         GlobalPayments.enums.CardNetwork.Discover
                     ],
                     nonCardPayments: {
-                    allowedPaymentMethods: [
-                        {
-                        provider: GlobalPayments.enums.ApmProviders.Blik,
-                        enabled: acceptBlik,
-                        },
-                    ]
+                        allowedPaymentMethods: [
+                            {
+                                provider: GlobalPayments.enums.ApmProviders.Blik,
+                                enabled: acceptBlik,
+                            },
+                        ]
                     }
                 };
 
@@ -221,9 +291,9 @@
                 if (acceptOpenBanking) {
                     gatewayConfig.apms.nonCardPayments.allowedPaymentMethods.push(
                         {
-                        provider: GlobalPayments.enums.ApmProviders.OpenBanking,
-                        enabled: acceptOpenBanking,
-                        category: "TBD"
+                            provider: GlobalPayments.enums.ApmProviders.OpenBanking,
+                            enabled: acceptOpenBanking,
+                            category: "TBD"
                         }
                     )
                 }
@@ -241,7 +311,7 @@
                 // Use baseCurrency/baseCountry from gatewayOptions, fallback to MXN/MX
                 var baseCurrency = this.gatewayOptions.baseCurrency || 'MXN';
                 var baseCountry = this.gatewayOptions.baseCountry || 'MX';
-                
+
                 gatewayConfig.installments = {
                     currency: baseCurrency,
                     country: baseCountry,
@@ -293,6 +363,8 @@
                 );
             }
 
+            // Only register APM event handlers if the SDK supports them (GP-API only, not Transit)
+            if (GlobalPayments.enums && GlobalPayments.enums.ApmEvents && GlobalPayments.enums.ApmProviders) {
             // To initiate blik transaction process
             this.cardForm.on(GlobalPayments.enums.ApmEvents.PaymentMethodSelection, (paymentProviderData, event) => {
                 const {
@@ -410,61 +482,61 @@
                                 currencyCode,
                             }
                         } else {
-                                helper.blockOnSubmit();
-                                // IMPORTANT: Do NOT call helper.placeOrder() here as it causes form submission
-                                // Make AJAX call to process Open Banking transaction
-                                var ajaxUrl = helper.getAjaxUrl('asyncPaymentMethodValidation');
-                                var ajaxData = {
-                                    payment_method: 'open_banking',
-                                    gateway_id: this.id,
-                                    action: 'initiate_sale'
-                                };
+                            helper.blockOnSubmit();
+                            // IMPORTANT: Do NOT call helper.placeOrder() here as it causes form submission
+                            // Make AJAX call to process Open Banking transaction
+                            var ajaxUrl = helper.getAjaxUrl('asyncPaymentMethodValidation');
+                            var ajaxData = {
+                                payment_method: 'open_banking',
+                                gateway_id: this.id,
+                                action: 'initiate_sale'
+                            };
 
-                                // Add order data if available
-                                if (this.order) {
-                                    if (this.order.amount) ajaxData.amount = this.order.amount;
-                                    if (this.order.currency) ajaxData.currency = this.order.currency;
-                                }
-                                ajaxData.bank = bankName;
-                                console.log('Open Banking AJAX Data:', ajaxData);
-                                $.ajax({
-                                    url: ajaxUrl,
-                                    type: 'POST',
-                                    dataType: 'json',
-                                    data: ajaxData,
-                                    success: function(response) {
-                                        helper.unblockOnError();
-                                        // Remove form submission prevention
-                                        $('form').off('submit.open-banking');
-                                        if (response.success && response.redirect_url) {
-                                            // Create detail object with actual redirect URL from response
-                                            const detail = {
-                                                provider,
-                                                redirect_url: response.redirect_url,
-                                            };
-                                            // Dispatch the custom event with actual redirect URL
-                                            const merchantCustomEventProvideDetails = new CustomEvent(GlobalPayments.enums.ApmEvents.PaymentMethodActionDetail, {
-                                                detail: detail
-                                            });
-                                            window.dispatchEvent(merchantCustomEventProvideDetails);
+                            // Add order data if available
+                            if (this.order) {
+                                if (this.order.amount) ajaxData.amount = this.order.amount;
+                                if (this.order.currency) ajaxData.currency = this.order.currency;
+                            }
+                            ajaxData.bank = bankName;
+                            console.log('Open Banking AJAX Data:', ajaxData);
+                            $.ajax({
+                                url: ajaxUrl,
+                                type: 'POST',
+                                dataType: 'json',
+                                data: ajaxData,
+                                success: function(response) {
+                                    helper.unblockOnError();
+                                    // Remove form submission prevention
+                                    $('form').off('submit.open-banking');
+                                    if (response.success && response.redirect_url) {
+                                        // Create detail object with actual redirect URL from response
+                                        const detail = {
+                                            provider,
+                                            redirect_url: response.redirect_url,
+                                        };
+                                        // Dispatch the custom event with actual redirect URL
+                                        const merchantCustomEventProvideDetails = new CustomEvent(GlobalPayments.enums.ApmEvents.PaymentMethodActionDetail, {
+                                            detail: detail
+                                        });
+                                        window.dispatchEvent(merchantCustomEventProvideDetails);
 
-                                            console.log('Redirecting to:', response.redirect_url);
+                                        console.log('Redirecting to:', response.redirect_url);
 
-                                        } else {
-                                            helper.showPaymentError(this.id, response.message || 'Payment processing failed');
-                                        }
-                                    }.bind(this),
-                                    error: function(xhr, error) {
-                                        helper.unblockOnError();
+                                    } else {
+                                        helper.showPaymentError(this.id, response.message || 'Payment processing failed');
+                                    }
+                                }.bind(this),
+                                error: function(xhr, error) {
+                                    helper.unblockOnError();
 
-                                        // Remove form submission prevention on error
-                                        $('form').off('submit.open-banking');
+                                    // Remove form submission prevention on error
+                                    $('form').off('submit.open-banking');
 
-                                        helper.showPaymentError(this.id, 'Payment processing failed. Please try again.');
-                                        console.error('Open Banking payment error:', error);
-                                        console.error('XHR Response:', xhr.responseText);
-                                    }.bind(this)
-                                });
+                                    helper.showPaymentError(this.id, 'Payment processing failed. Please try again.');
+                                    console.error('Open Banking payment error:', error);
+                                    console.error('XHR Response:', xhr.responseText);
+                                }.bind(this)
+                            });
                         }
                         break;
                     default:
@@ -482,6 +554,7 @@
                 if (!bankName) window.dispatchEvent(merchantCustomEventProvideDetails);
                 return 0;
             });
+            } // End of APM enums check
 
             this.cardForm.on('submit', 'click', helper.blockOnSubmit.bind(this));
             this.cardForm.on('token-success', this.handleResponse.bind(this));
@@ -544,7 +617,13 @@
                     tokenResponseElement.id   = that.id + '-token_response';
                     tokenResponseElement.name = that.id + '[token_response]';
                     tokenResponseElement.type = 'hidden';
-                    helper.getForm(that.id).appendChild(tokenResponseElement);
+                    var targetForm = helper.getForm(that.id);
+                    if (!targetForm) {
+                        helper.showPaymentError(that.id, 'Payment form not found. Please refresh the page.');
+                        helper.unblockOnError();
+                        return;
+                    }
+                    targetForm.appendChild(tokenResponseElement);
                 }
 
                 response.details.cardSecurityCode = cvvVal;
@@ -643,20 +722,19 @@
 
         /**
          * Process HPP (Hosted Payment Page) payment via AJAX
-         * 
+         *
          * This prevents raw JSON error responses from being displayed to the user
          * by using AJAX to call validation.php and handling the response properly.
-         * 
+         *
          * @returns {void}
          */
         processHppPayment: function () {
-            
             // Block UI during processing
             helper.blockOnSubmit();
-            
+
             var self = this;
             var form = $(helper.getForm(this.id));
-            
+
             const defaultHPPFailedTxt = 'Payment processing failed. Please Refresh the page and try again.';
 
             // Make AJAX call to validation.php
@@ -669,16 +747,23 @@
                     
                     // Check if there's a redirect URL (successful HPP initiation)
                     if (response.redirect) {
-                        window.location.href = response.redirect;
+                        // Validate redirect URL to prevent open redirect vulnerability
+                        var safeUrl = self.validateRedirectUrl(response.redirect);
+                        
+                        if (safeUrl) {
+                            window.location.href = safeUrl;
+                        } else {
+                            console.error('Invalid redirect URL blocked for security');
+                            helper.showPaymentError(self.id, defaultHPPFailedTxt);
+                        }
                         return;
                     }
-                    
+
                     // If we get here, something went wrong
                     helper.unblockOnError();
-                    
+
                     if (response.error && response.errorMessage) {
                         helper.showPaymentError(self.id, response.errorMessage);
-
                     } else {
                         helper.showPaymentError(self.id, defaultHPPFailedTxt);
                     }
@@ -688,10 +773,10 @@
                     
                     console.error('HPP payment error:', error);
                     console.error('XHR Response:', xhr.responseText);
-                    
+
                     // Try to parse error response
                     var errorMessage = defaultHPPFailedTxt;
-                    
+
                     try {
                         var errorResponse = JSON.parse(xhr.responseText);
                         if (errorResponse.errorMessage) {
@@ -701,7 +786,7 @@
                         // If we can't parse the response, use the default message
                         console.error('Could not parse error response:', e);
                     }
-                    
+
                     helper.showPaymentError(self.id, errorMessage);
                 }
             });
@@ -782,10 +867,8 @@
                 }
             }
 
-            if ( response.details && ! response.details.cardSecurityCode ) {
-                this.showValidationError('card-cvv');
-                result = false;
-            }
+            // Note: Don't validate cardSecurityCode here as it's extracted separately
+            // from the iframe via getCvv() for TransIT gateway processing
 
             return result;
         },
@@ -797,6 +880,11 @@
          */
         resetValidationErrors: function () {
             $('.' + this.id + ' .globalpayments-validation-error').hide();
+            // Remove error highlighting from all fields
+            $('.' + this.id + '.card-number').removeClass('has-error');
+            $('.' + this.id + '.card-expiration').removeClass('has-error');
+            $('.' + this.id + '.card-cvv').removeClass('has-error');
+            $('.' + this.id + '.card-holder-name').removeClass('has-error');
         },
 
         /**
@@ -807,7 +895,9 @@
          * @returns
          */
         showValidationError: function (fieldType) {
-            $('.' + this.id + '.' + fieldType + ' .globalpayments-validation-error').show();
+            var $fieldWrapper = $('.' + this.id + '.' + fieldType);
+            $fieldWrapper.addClass('has-error');
+            $fieldWrapper.find('.globalpayments-validation-error').show();
 
             helper.unblockOnError();
         },
@@ -827,12 +917,64 @@
                 return;
             }
 
+            var self = this;
             var numberOfReasons = error.reasons.length;
             for (var i=0; i < numberOfReasons; i++) {
                 var reason = error.reasons[i];
                 switch (reason.code) {
                     case 'NOT_AUTHENTICATED':
-                        helper.showPaymentError(this.id, this.messages.notAuthenticated)
+                        helper.showPaymentError(this.id, (this.messages && this.messages.notAuthenticated) ? this.messages.notAuthenticated : reason.message);
+                        break;
+                    case 'INVALID_CONFIGURATION':
+                        helper.showPaymentError(this.id, (this.messages && this.messages.invalidConfiguration) ? this.messages.invalidConfiguration : reason.message);
+                        break;
+                    case 'INVALID_CARD_NUMBER':
+                        self.showValidationError('card-number');
+                        break;
+                    case 'INVALID_CARD_EXPIRATION':
+                        self.showValidationError('card-expiration');
+                        break;
+                    case 'INVALID_CARD_SECURITY_CODE':
+                        self.showValidationError('card-cvv');
+                        break;
+                    case 'INVALID_CARD_HOLDER_NAME':
+                    case 'TOO_LONG_DATA':
+                        self.showValidationError('card-holder-name');
+                        break;
+                    case 'MANDATORY_DATA_MISSING':
+                        if (reason.message && reason.message.search('card type') >= 0) {
+                            self.showValidationError('card-number');
+                        } else if (reason.message && reason.message.search('expiry_year') >= 0) {
+                            self.showValidationError('card-expiration');
+                        } else if (reason.message && reason.message.search('expiry_month') >= 0) {
+                            self.showValidationError('card-expiration');
+                        } else if (reason.message && reason.message.search('card.cvn.number') >= 0) {
+                            self.showValidationError('card-cvv');
+                        } else {
+                            helper.showPaymentError(self.id, reason.message);
+                        }
+                        break;
+                    case 'INVALID_REQUEST_DATA':
+                        if (reason.message && reason.message.search('number contains unexpected data') >= 0) {
+                            self.showValidationError('card-number');
+                        } else if (reason.message && reason.message.search('Luhn Check') >= 0) {
+                            self.showValidationError('card-number');
+                        } else if (reason.message && reason.message.search('cvv contains unexpected data') >= 0) {
+                            self.showValidationError('card-cvv');
+                        } else if (reason.message && reason.message.search('expiry_year') >= 0) {
+                            self.showValidationError('card-expiration');
+                        } else if (reason.message && reason.message.search('card.number') >= 0) {
+                            self.showValidationError('card-number');
+                        } else {
+                            helper.showPaymentError(self.id, reason.message);
+                        }
+                        break;
+                    case 'SYSTEM_ERROR_DOWNSTREAM':
+                        if (reason.message && reason.message.search('card expdate') >= 0) {
+                            self.showValidationError('card-expiration');
+                        } else {
+                            helper.showPaymentError(self.id, reason.message);
+                        }
                         break;
                     case 'ERROR':
                         helper.showPaymentError(this.id, reason.message);
@@ -898,13 +1040,21 @@
         * Determines if the intergration type is HPP
         *
         * @returns {Boolean}
-        */ 
-       isHppEnabled: function(){
-            return this.gatewayOptions?.integrationMethod === 'hosted payment page'
-       }
+        */
+        isHppEnabled: function(){
+            return this.gatewayOptions?.integrationMethod === 'hosted payment page';
+        }
     };
 
-    new GlobalPaymentsPrestaShop(globalpayments_secure_payment_fields_params, globalpayments_secure_payment_threedsecure_params);
+    // Create GP_UCP instance if params are defined
+    if (typeof globalpayments_secure_payment_fields_params !== 'undefined' && globalpayments_secure_payment_fields_params) {
+        new GlobalPaymentsPrestaShop(globalpayments_secure_payment_fields_params, globalpayments_secure_payment_threedsecure_params);
+    }
+    
+    // Create Transit instance if Transit params are defined
+    if (typeof globalpayments_transit_params !== 'undefined' && globalpayments_transit_params) {
+        new GlobalPaymentsPrestaShop(globalpayments_transit_params, (window).globalpayments_transit_threedsecure_params || {});
+    }
 }(
     /**
      * Global `jQuery` reference

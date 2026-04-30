@@ -7,24 +7,59 @@ div[id^="GlobalPayments-overlay-"] {
     z-index: 1001 !important;
 }
 
-.globalpayments-validation-error, .globalpayments-sandbox-warning {
-    margin-bottom:1em;
-    background-color:#e2401c;
-    margin-left:0;
-    border-radius:4px;
-    color:#fff;
-    clear:both;
-    border-left:.6180469716em solid rgba(0,0,0,.15);
-    padding:6px 12px;
-    position:relative;
-    list-style:none outside;
-    display:block;
-    width:100%;
-    font-size:14px;
+/* Required field indicator */
+.globalpayments label .required {
+    color: #e02b27;
+    font-weight: bold;
+}
+
+/* Field wrapper for required fields */
+.globalpayments.required label {
+    font-weight: 500;
+}
+
+/* Field-level validation error (shown below each field) */
+.globalpayments .globalpayments-validation-error {
+    display: none;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    background-color: #fae5e5;
+    border-left: 3px solid #e02b27;
+    border-radius: 2px;
+    color: #e02b27;
+    font-size: 12px;
+    list-style: none;
+}
+
+/* Top-level payment error (shown at form top) */
+.globalpayments-checkout-error .globalpayments-validation-error,
+.globalpayments-sandbox-warning {
+    margin-bottom: 1em;
+    background-color: #e2401c;
+    margin-left: 0;
+    border-radius: 4px;
+    color: #fff;
+    clear: both;
+    border-left: .6180469716em solid rgba(0,0,0,.15);
+    padding: 6px 12px;
+    position: relative;
+    list-style: none outside;
+    display: block;
+    width: 100%;
+    font-size: 14px;
 }
 
 .globalpayments-payment-form {
     margin: 1rem 0;
+}
+
+/* Highlight field with error */
+.globalpayments.card-number.has-error iframe,
+.globalpayments.card-expiration.has-error iframe,
+.globalpayments.card-cvv.has-error iframe,
+.globalpayments.card-holder-name.has-error iframe {
+    border-color: #e02b27 !important;
 }
 
 .enable-vault {

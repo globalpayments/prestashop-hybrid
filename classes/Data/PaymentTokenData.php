@@ -112,19 +112,19 @@ class PaymentTokenData
 
         $token->setToken($requestData->paymentReference);
 
-        if (isset($requestData->details->cardLast4)) {
+        if (!empty($requestData->details->cardLast4)) {
             $token->setLast4($requestData->details->cardLast4);
         }
 
-        if (isset($requestData->details->expiryYear)) {
+        if (!empty($requestData->details->expiryYear)) {
             $token->setExpiryYear($requestData->details->expiryYear);
         }
 
-        if (isset($requestData->details->expiryMonth)) {
+        if (!empty($requestData->details->expiryMonth)) {
             $token->setExpiryMonth($requestData->details->expiryMonth);
         }
 
-        if (isset($requestData->details->cardType) && isset($this->cardTypeMap[$requestData->details->cardType])) {
+        if (!empty($requestData->details->cardType) && isset($this->cardTypeMap[$requestData->details->cardType])) {
             $token->setCardtype($this->cardTypeMap[$requestData->details->cardType]);
         }
 

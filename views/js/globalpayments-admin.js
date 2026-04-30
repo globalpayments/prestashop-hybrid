@@ -169,6 +169,13 @@
          * 'Live Mode' switch
          */
         attachEvents: function () {
+            // Handle hash-based tab switching FIRST before setting ID
+            var hash = window.location.hash;
+            if (hash && $('ul.nav a[href="' + hash + '"]').length) {
+                $('ul.nav a[href="' + hash + '"]').tab('show');
+                window.scrollTo({top: 0});
+            }
+
             this.setId();
             if (!this.id) {
                 return;
@@ -265,12 +272,8 @@
         },
 
         loadPaymentMethodTabsHash: function() {
-            var hash = window.location.hash;
-            // If there is a hash present in the URL, load that specific tab.
-            if (hash) {
-                $('ul.nav a[href="' + hash + '"]').tab('show');
-                window.scrollTo({top: 0});
-            }
+            // Hash-based initial tab loading is now handled in attachEvents()
+            // This function now only handles click events for tab navigation
 
             // When a tab is clicked, add the hash to the URL.
             $('.nav-tabs a').click(function (e) {
@@ -569,9 +572,10 @@
          */
         toggleCredentialsSettings: function () {
             var display = this.isLiveMode();
+            var activeForm = $(this.getActiveFormSelector());
 
-            $('.live-toggle').parents('.form-group').toggle(display);
-            $('.sandbox-toggle').parents('.form-group').toggle(!display);
+            activeForm.find('.live-toggle').parents('.form-group').toggle(display);
+            activeForm.find('.sandbox-toggle').parents('.form-group').toggle(!display);
 
             // Remove required attribute from hidden dropdown fields to prevent validation errors
             if (display) {

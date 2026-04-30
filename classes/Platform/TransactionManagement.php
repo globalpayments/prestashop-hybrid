@@ -17,7 +17,8 @@ namespace GlobalPayments\PaymentGatewayProvider\Platform;
 
 use Exception;
 use GlobalPayments\PaymentGatewayProvider\Data\Order as OrderModel;
-use GlobalPayments\PaymentGatewayProvider\Gateways\GpApiGateway;
+use GlobalPayments\PaymentGatewayProvider\Gateways\{AbstractGateway, GatewayId, GpApiGateway, TransitGateway};
+use GlobalPayments\PaymentGatewayProvider\PaymentMethodFactory;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\OrderStateHelper;
 use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
 use PrestaShopBundle\Translation\TranslatorComponent as Translator;
@@ -73,6 +74,77 @@ class TransactionManagement
         $this->orderStateHelper = new OrderStateHelper();
         $this->transactionHistory = new TransactionHistory();
         $this->translator = $this->module->getTranslator();
+    }
+
+    /**
+     * Get the payment gateway for the order.
+     *
+     * This method determines which gateway (GpApi, TransIT, etc.) was used for the original
+     * transaction by checking the payment method ID stored in order additional info.
+     *
+     * @param \Order $psOrder
+     *
+     * @return AbstractGateway
+     *
+     * @throws \PrestaShopDatabaseException
+     */
+    private function getGatewayForOrder(\Order $psOrder): AbstractGateway
+    {
+        $orderAdditionalInfo = new OrderAdditionalInfo();
+        $paymentMethodId = $orderAdditionalInfo->getAdditionalInfo($psOrder->id, 'paymentMethodId');
+
+        // If we have a stored payment method ID, use the appropriate gateway
+        if ($paymentMethodId) {
+            // Check if this is a TransIT gateway payment
+            if ($paymentMethodId === GatewayId::TRANSIT) {
+                return new TransitGateway();
+            }
+            
+            // Check if this is a GP UCP (Unified Commerce Platform) gateway payment
+            if ($paymentMethodId === GatewayId::GP_UCP) {
+                return new GpApiGateway();
+            }
+            
+            // For other payment methods (Apple Pay, Google Pay, etc.) that use GpApiGateway
+            // Try to get the gateway from the active payment methods
+            try {
+                $paymentMethodFactory = new PaymentMethodFactory();
+                $paymentMethod = $paymentMethodFactory->create($paymentMethodId);
+                
+                // If it's an AbstractGateway, return it directly
+                if ($paymentMethod instanceof AbstractGateway) {
+                    return $paymentMethod;
+                }
+                
+                // For payment methods that have a gateway property
+                if (property_exists($paymentMethod, 'gateway') && $paymentMethod->gateway instanceof AbstractGateway) {
+                    return $paymentMethod->gateway;
+                }
+            } catch (Exception $e) {
+                \PrestaShopLogger::addLog(
+                    sprintf(
+                        'Failed to resolve gateway for order ID %d with payment method ID "%s": %s',
+                        (int) $psOrder->id,
+                        (string) $paymentMethodId,
+                        $e->getMessage()
+                    ),
+                    3
+                );
+            }
+        }
+
+        // Fallback: Try to determine gateway from order payment method name
+        // This handles older orders that don't have paymentMethodId stored
+        $paymentMethodName = $psOrder->payment ?? '';
+        
+        // Check if payment method name indicates TransIT
+        if (stripos($paymentMethodName, 'transit') !== false) {
+            return new TransitGateway();
+        }
+
+        // Default to GpApiGateway for backward compatibility with existing orders
+        // that don't have the payment method ID stored
+        return new GpApiGateway();
     }
 
     /**
@@ -257,18 +329,19 @@ class TransactionManagement
     public function processCapture($psOrder, $amount)
     {
         $orderPayment = \OrderPayment::getByOrderReference($psOrder->reference)[0];
-        $gateway = new GpApiGateway();
         $currency = new \Currency($psOrder->id_currency);
 
-        $order = $this->order->generateOrder(
-            [
-                'amount' => $amount,
-                'currency' => $currency->iso_code,
-                'transactionId' => $orderPayment->transaction_id,
-            ]
-        );
-
         try {
+            // Use the appropriate gateway based on the original payment method
+            $gateway = $this->getGatewayForOrder($psOrder);
+
+            $order = $this->order->generateOrder(
+                [
+                    'amount' => $amount,
+                    'currency' => $currency->iso_code,
+                    'transactionId' => $orderPayment->transaction_id,
+                ]
+            );
             $request = $gateway->prepareRequest(TransactionType::CAPTURE, $order);
             $response = $gateway->submitRequest($request);
 
@@ -336,18 +409,18 @@ class TransactionManagement
         if ($amount > 0.00) {
             $orderPayment = \OrderPayment::getByOrderReference($psOrder->reference)[0];
 
-            $gateway = new GpApiGateway();
-
-            $order = $this->order->generateOrder(
-                [
-                    'amount' => $amount,
-                    'currency' => $currency->iso_code,
-                    'description' => '',
-                    'transactionId' => $orderPayment->transaction_id,
-                ]
-            );
-
             try {
+                // Use the appropriate gateway based on the original payment method
+                $gateway = $this->getGatewayForOrder($psOrder);
+
+                $order = $this->order->generateOrder(
+                    [
+                        'amount' => $amount,
+                        'currency' => $currency->iso_code,
+                        'description' => '',
+                        'transactionId' => $orderPayment->transaction_id,
+                    ]
+                );
                 $response = $gateway->processRefund($order);
 
                 if ($response) {

@@ -17,10 +17,14 @@ namespace GlobalPayments\PaymentGatewayProvider\Requests\HostedPaymentPages;
 
 use GlobalPayments\Api\Builders\HPPBuilder;
 use GlobalPayments\Api\Entities\Address;
+use GlobalPayments\Api\Entities\Customer;
+use GlobalPayments\Api\Entities\InstallmentData;
+use GlobalPayments\Api\Entities\InstallmentTerms;
 use GlobalPayments\Api\Entities\Enums\CaptureMode;
 use GlobalPayments\Api\Entities\Enums\ChallengeRequestIndicator;
 use GlobalPayments\Api\Entities\Enums\Channel;
 use GlobalPayments\Api\Entities\Enums\ExemptStatus;
+use GlobalPayments\Api\Entities\Enums\InstallmentsFundingMode;
 use GlobalPayments\Api\Entities\Enums\HPPAllowedPaymentMethods;
 use GlobalPayments\Api\Entities\Enums\PaymentMethodUsageMode;
 use GlobalPayments\Api\Entities\Enums\PhoneNumberType;
@@ -156,6 +160,16 @@ class InitiatePaymentRequest extends AbstractRequest
         $enabledWallets = $this->getDigitalWallets();
         if (!empty($enabledWallets)) {
             $hppBuilder->withDigitalWallets($enabledWallets);
+        }
+
+        if (\Configuration::get('globalpayments_ucp_enableInstallments')) {
+            $maxMonths = \Configuration::get('globalpayments_ucp_installmentsMaxMonths');
+
+            $fundingMode = (\Configuration::get('globalpayments_ucp_installmentsFundingMode') === 'select')
+                ? InstallmentsFundingMode::ANY
+                : \Configuration::get('globalpayments_ucp_installmentsFundingMode');
+
+            $hppBuilder->withInstallments($fundingMode, $maxMonths);
         }
 
         // Add alternative payment methods

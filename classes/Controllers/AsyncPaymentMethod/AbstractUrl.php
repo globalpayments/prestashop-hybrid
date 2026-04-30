@@ -175,6 +175,9 @@ class AbstractUrl extends \ModuleFrontController
                 break;
             case 'POST':
                 $xgpSignature = $request->getHeader('X-Gp-Signature') ?? $request->getHeader('X-GP-Signature');
+                if (empty($xgpSignature)) {
+                    $xgpSignature = $request->getHeader('x-gp-signature');
+                }
                 $toHash = $request->getParam('rawContent');
 
                 break;

@@ -132,10 +132,22 @@
             // Remove notices from all sources
             $('.globalpayments-checkout-error').remove();
 
+            // Create error div safely to prevent XSS
+            var errorDiv = $('<div>').addClass('globalpayments-checkout-error');
+            
+            // Check if message contains validation error markup
             if (-1 === message.indexOf('globalpayments-validation-error')) {
-                message = '<ul class="globalpayments-validation-error"><li>' + message + '</li></ul>';
+                // Create safe list structure
+                var ul = $('<ul>').addClass('globalpayments-validation-error');
+                var li = $('<li>').text(message);  // .text() escapes HTML entities
+                ul.append(li);
+                errorDiv.append(ul);
+            } else {
+                // Message already has markup structure, use text() to safely display
+                errorDiv.text(message);
             }
-            $form.prepend('<div class="globalpayments-checkout-error">' + message + '</div>');
+            
+            $form.prepend(errorDiv);
 
             $('html, body').animate({
                 scrollTop: ($form.offset().top - 100)

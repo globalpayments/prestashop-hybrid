@@ -41,6 +41,40 @@
 
     Helper.prototype = {
         /**
+         * Validates a redirect URL to prevent open redirect vulnerabilities
+         * 
+         * @param {string} url - The URL to validate
+         * @returns {string|null} - Returns validated relative URL or null if invalid
+         */
+        validateRedirectUrl: function(url) {
+            if (typeof url !== 'string' || !url) {
+                return null;
+            }
+            
+            try {
+                // If it's a relative URL (starts with / and not //), extract and return it
+                if (url.indexOf('/') === 0 && url.indexOf('//') !== 0) {
+                    // Additional validation: ensure it doesn't contain dangerous patterns
+                    if (url.match(/^\/[a-zA-Z0-9\/_\-\.?=&%#]+$/)) {
+                        return url;
+                    }
+                }
+                
+                // If it has a protocol, validate it's same-origin
+                var parsedUrl = new URL(url, window.location.origin);
+                if (parsedUrl.origin === window.location.origin && 
+                    parsedUrl.protocol === window.location.protocol) {
+                    // Return only the pathname+search+hash (strip origin for security)
+                    return parsedUrl.pathname + parsedUrl.search + parsedUrl.hash;
+                }
+            } catch (e) {
+                console.error('URL validation error:', e);
+            }
+            
+            return null;
+        },
+
+        /**
          * Add important event handlers for controlling the payment experience during checkout
          *
          * @returns
@@ -137,7 +171,15 @@
                 success: function (data) {
                     data = JSON.parse(data);
                     if (data.redirect) {
-                        window.location.href = data.redirect;
+                        // Use validation function to prevent open redirect vulnerability
+                        var safeUrl = self.validateRedirectUrl(data.redirect);
+                        
+                        if (safeUrl) {
+                            window.location.href = safeUrl;
+                        } else {
+                            console.error('Invalid redirect URL blocked for security');
+                        }
+                        return;
                     }
                     if (data.error === false) {
                         return;
@@ -280,7 +322,15 @@
             var submitButtonTarget = $(this.getSubmitButtonTargetSelector(paymentMethodSelected));
 
             if (isPaymentMethodSelected) {
-                if (window.globalpayments_secure_payment_fields_params.gatewayOptions.integrationMethod === 'drop in ui') {
+                // Select params based on the selected payment method
+                var gpParams = null;
+                if (paymentMethodSelected === 'globalpayments_ucp') {
+                    gpParams = window.globalpayments_secure_payment_fields_params;
+                } else if (paymentMethodSelected === 'globalpayments_transit') {
+                    gpParams = window.globalpayments_transit_params;
+                }
+                var integrationMethod = gpParams && gpParams.gatewayOptions ? gpParams.gatewayOptions.integrationMethod : null;
+                if (integrationMethod === 'drop in ui') {
                     submitButtonTarget.show();
                     this.hidePlaceOrderButton();
                 }

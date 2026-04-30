@@ -66,9 +66,18 @@ class GlobalPaymentsCheckEnrollmentModuleFrontController extends ModuleFrontCont
         try {
             $response = $gateway->processThreeDSecureCheckEnrollment($order);
         } catch (Exception $e) {
+            // Log the actual error for debugging (server-side only)
+            PrestaShopLogger::addLog(
+                '3DS Check Enrollment Error: ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR,
+                $e->getCode(),
+                'Order',
+                null,
+                true
+            );
             $response = [
                 'error' => true,
-                'message' => $e->getMessage(),
+                'message' => 'Unable to verify card enrollment. Please try again or contact support.',
                 'enrolled' => CheckEnrollmentRequest::NO_RESPONSE,
             ];
         }

@@ -16,6 +16,7 @@
 use GlobalPayments\PaymentGatewayProvider\Gateways\AbstractGateway;
 use GlobalPayments\PaymentGatewayProvider\Gateways\GatewayId;
 use GlobalPayments\PaymentGatewayProvider\Gateways\GpApiGateway;
+use GlobalPayments\PaymentGatewayProvider\Gateways\TransitGateway;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\AbstractPaymentMethod;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\DigitalWallets\ApplePay;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\DigitalWallets\ClickToPay;
@@ -27,6 +28,7 @@ use GlobalPayments\PaymentGatewayProvider\Platform\Helper\AddressHelper;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\CheckoutHelper;
 use GlobalPayments\PaymentGatewayProvider\Platform\OrderAdditionalInfo;
 use GlobalPayments\PaymentGatewayProvider\Platform\OrderStateInstaller;
+use GlobalPayments\PaymentGatewayProvider\Requests\IntegrationType;
 use GlobalPayments\PaymentGatewayProvider\Platform\Token;
 use GlobalPayments\PaymentGatewayProvider\Platform\TransactionHistory;
 use GlobalPayments\PaymentGatewayProvider\Platform\TransactionManagement;
@@ -99,7 +101,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '1.9.1';
+        $this->version = '2.0.0';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
@@ -121,6 +123,7 @@ class GlobalPayments extends PaymentModule
 
         $this->paymentMethods = [
             new GpApiGateway(),
+            new TransitGateway(),
         ];
 
         $this->paymentMethods = array_merge($this->paymentMethods, GpApiGateway::getPaymentMethods());
@@ -202,7 +205,9 @@ class GlobalPayments extends PaymentModule
             && $this->registerHook('displayAdminOrderMain')
             && $this->registerHook('displayCustomerAccount')
             && $this->registerHook('displayPaymentReturn')
-            && $this->registerHook('paymentOptions');
+            && $this->registerHook('paymentOptions')
+            && $this->registerHook('actionEmailAddAfterContent')
+            && $this->registerHook('actionGetExtraMailTemplateVars');
     }
 
     /**
@@ -356,6 +361,8 @@ class GlobalPayments extends PaymentModule
     {
         if (isset($this->getActivePaymentMethods()[GatewayId::GP_UCP])) {
             $this->activeGateway = $this->getActivePaymentMethods()[GatewayId::GP_UCP];
+        } elseif (isset($this->getActivePaymentMethods()[GatewayId::TRANSIT])) {
+            $this->activeGateway = $this->getActivePaymentMethods()[GatewayId::TRANSIT];
         }
 
         uasort($this->activePaymentMethods, [$this, 'sortPaymentMethods']);
@@ -561,7 +568,7 @@ class GlobalPayments extends PaymentModule
 
         if ($orderId > 0 && ($isLegacyOrderPage || strpos($requestUri, '/sell/orders/') !== false)) {
             $order = new Order($orderId);
-            
+
             if ($order && $order->module === $this->name) {
                 $orderAdditionalInfo = new OrderAdditionalInfo();
                 $installmentHistory = $orderAdditionalInfo->getAdditionalInfo($orderId, 'installment_history');
@@ -572,7 +579,7 @@ class GlobalPayments extends PaymentModule
                     $alreadyRefunded +=
                         (float) $slip['total_products_tax_incl'] + (float) $slip['total_shipping_tax_incl'];
                 }
-                
+
                 Media::addJsDef([
                     'globalpayments_order_data' => [
                         'orderId' => $orderId,
@@ -671,6 +678,7 @@ class GlobalPayments extends PaymentModule
                     ],
                     'toggle' => [
                         GatewayId::GP_UCP,
+                        GatewayId::TRANSIT,
                         ApplePay::PAYMENT_METHOD_ID,
                         GooglePay::PAYMENT_METHOD_ID,
                     ],
@@ -898,12 +906,12 @@ class GlobalPayments extends PaymentModule
     public function hookDisplayCustomerAccount()
     {
         $activeGateway = $this->getActiveGateway();
-        
+
         // Only show stored cards link if allowCardSaving is enabled
         if (!$activeGateway || !$activeGateway->allowCardSaving) {
             return;
         }
-        
+
         $this->context->smarty->assign([
             'activeGateway' => $activeGateway,
             'title' => (new Utils())->getCardStorageText(),
@@ -921,20 +929,48 @@ class GlobalPayments extends PaymentModule
             return;
         }
 
+        $templateVars = [];
+
+        $activeGateway = $this->getActiveGateway();
+
+        $path = $this->getFrontendScriptsPath();
+
+        $this->context->controller->registerJavascript(
+            'PaymentReturn',
+            $path . '/views/js/globalpayments-payment-return.js'
+        );
+
+        $this->context->controller->addCSS(
+            $this->_path . 'views/css/globalpayments-installments-modal.css'
+        );
+
         $order = $params['order'];
         $cookie = $params['cookie'] ?? $this->context->cookie;
         $paymentError = '';
+
+        if ($activeGateway && $activeGateway->integrationType === IntegrationType::HOSTED_PAYMENT_PAGE) {
+            $order = new Order((int) $params['order']->id);
+            $orderAdditionalInfo = new OrderAdditionalInfo();
+            $installmentHistory = $orderAdditionalInfo->getAdditionalInfo($order->id, 'installment_history');
+
+            if (!empty($installmentHistory)) {
+                $installmentHistory['order_amount'] = number_format((float) $order->total_paid, 2, '.', '');
+                $templateVars['installmentsData'] = $installmentHistory;
+            }
+        }
+
+
         if ($cookie->__isset('globalpayments_payment_error')) {
             $paymentError = $cookie->globalpayments_payment_error;
             unset($cookie->globalpayments_payment_error);
         }
 
         if ($order->getCurrentOrderState()->id !== (int) Configuration::get('PS_OS_ERROR')) {
-            $this->context->smarty->assign([
-                'status' => 'ok',
-                'error' => $paymentError,
-            ]);
+            $templateVars['error'] = $paymentError;
+            $templateVars['status'] = 'ok';
         }
+
+        $this->context->smarty->assign($templateVars);
 
         return $this->display(__FILE__, 'payment_return.tpl');
     }
@@ -992,5 +1028,95 @@ class GlobalPayments extends PaymentModule
         ];
 
         return json_encode($securePaymentFieldsStyles);
+    }
+
+    /**
+     * ActionEmailAddAfterContent Hook
+     *
+     * Used to inject {installment_section} placeholder into the payment confirmation email HTML template.
+     * The placeholder is populated by hookActionGetExtraMailTemplateVars.
+     */
+    public function hookActionEmailAddAfterContent(array $params): void
+    {
+        if ($params['template'] !== 'payment') {
+            return;
+        }
+
+        $placeholder = '{installment_section}';
+
+        if (strpos($params['template_html'], '<!-- SHOP NAME BEGINING -->') !== false) {
+            $params['template_html'] = str_replace(
+                '<!-- SHOP NAME BEGINING -->',
+                $placeholder . '<!-- SHOP NAME BEGINING -->',
+                $params['template_html']
+            );
+        } else {
+            $params['template_html'] = str_replace(
+                '</body>',
+                $placeholder . '</body>',
+                $params['template_html']
+            );
+        }
+    }
+
+    /**
+     * ActionGetExtraMailTemplateVars Hook
+     *
+     * inject installment details into payment confirmation email
+     */
+    public function hookActionGetExtraMailTemplateVars(array $params): void
+    {
+        if ($params['template'] !== 'payment') {
+            return;
+        }
+
+        $params['extra_template_vars']['{installment_section}'] = '';
+
+        $orderId = (int)($params['template_vars']['{id_order}'] ?? 0);
+
+        if ($orderId <= 0) {
+            return;
+        }
+
+        $orderAdditionalInfo = new OrderAdditionalInfo();
+        $installmentData = $orderAdditionalInfo->getAdditionalInfo($orderId, 'installment_history');
+
+        if (empty($installmentData)) {
+            return;
+        }
+
+        $params['extra_template_vars']['{installment_section}'] = $this->getInstallmentsHtml($installmentData);
+    }
+
+    /**
+     * Build installments display HTML
+     *
+     * @param array<string, mixed> $installmentData Installment data
+     * @return string HTML for installment details
+     */
+    private function getInstallmentsHtml(array $installmentData): string
+    {
+        $installments = htmlspecialchars((string)($installmentData['installments'] ?? 'N/A'));
+        $financedAmount = htmlspecialchars((string)($installmentData['financed_amount'] ?? 'N/A'));
+        $financeFee = htmlspecialchars((string)($installmentData['finance_fee'] ?? 'N/A'));
+        $monthlyAmount = htmlspecialchars((string)($installmentData['monthly_amount'] ?? 'N/A'));
+        $currency = htmlspecialchars((string)($installmentData['currency'] ?? ''));
+        $currencyDisplay = $currency ? ' ' . $currency : '';
+
+        return <<<HTML
+        <div class="v1shadow v1wrapper-container" style="box-shadow: 0 20px 30px 0 rgba(0, 0, 0, 0.1); background: #ffffff; background-color: #ffffff; margin: 0px auto; border-radius: 4px; max-width: 604px">
+            <div style="font-family: Open sans,arial,sans-serif; font-size: 14px; line-height: 25px; text-align: left; color: #363A41;margin: 10px;padding: 10px;">
+                <span style="font-weight:700;font-size:15px;">Installment Payment Details</span>
+                <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:8px;font-family:Open sans,arial,sans-serif;font-size:14px;color:#363A41;" width="100%">
+                    <tbody>
+                        <tr><td style="padding:3px 0;"><span style="font-weight:700;">Installments:</span> {$installments}</td></tr>
+                        <tr><td style="padding:3px 0;"><span style="font-weight:700;">Total Financed Amount:</span> {$financedAmount}{$currencyDisplay}</td></tr>
+                        <tr><td style="padding:3px 0;"><span style="font-weight:700;">Finance Fee:</span> {$financeFee}{$currencyDisplay}</td></tr>
+                        <tr><td style="padding:3px 0;"><span style="font-weight:700;">Monthly Amount:</span> {$monthlyAmount}{$currencyDisplay}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+HTML;
     }
 }

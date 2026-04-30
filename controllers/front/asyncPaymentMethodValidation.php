@@ -217,10 +217,19 @@ class GlobalPaymentsAsyncPaymentMethodValidationModuleFrontController extends Mo
                 $this->utils->mapResponseCodeToFriendlyMessage()
             );
         } catch (Exception $e) {
+            // Log the actual error for debugging (server-side only)
+            PrestaShopLogger::addLog(
+                'Payment Processing Error: ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR,
+                $e->getCode(),
+                'Cart',
+                (int) $cart->id,
+                true
+            );
             $this->checkoutHelper->postResponse(
                 true,
                 '',
-                $e->getMessage()
+                'Unable to process your payment. Please try again or contact support.'
             );
         }
     }
@@ -281,10 +290,19 @@ class GlobalPaymentsAsyncPaymentMethodValidationModuleFrontController extends Mo
                 'message' => $this->utils->mapResponseCodeToFriendlyMessage()
             ]));
         } catch (Exception $e) {
+            // Log the actual error for debugging (server-side only)
+            PrestaShopLogger::addLog(
+                'BLIK Payment Error: ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR,
+                $e->getCode(),
+                'Cart',
+                (int) $cart->id,
+                true
+            );
             header('Content-Type: application/json');
             die(json_encode([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Unable to process your payment. Please try again or contact support.'
             ]));
         }
     }
@@ -341,10 +359,19 @@ class GlobalPaymentsAsyncPaymentMethodValidationModuleFrontController extends Mo
                 'message' => $this->utils->mapResponseCodeToFriendlyMessage()
             ]));
         } catch (Exception $e) {
+            // Log the actual error for debugging (server-side only)
+            PrestaShopLogger::addLog(
+                'Open Banking Payment Error: ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR,
+                $e->getCode(),
+                'Cart',
+                (int) $cart->id,
+                true
+            );
             header('Content-Type: application/json');
             die(json_encode([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Unable to process your payment. Please try again or contact support.'
             ]));
         }
     }

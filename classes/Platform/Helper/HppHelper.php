@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace GlobalPayments\PaymentGatewayProvider\Platform\Helper;
 
+use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\AbstractPaymentMethod;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\HostedPaymentPages\Hpp;
 use GlobalPayments\PaymentGatewayProvider\Platform\OrderAdditionalInfo;
@@ -47,20 +48,34 @@ class HppHelper
      */
     public function completePayment(\Order $order, string $transactionId, array $gatewayData, bool $addTransactionHistory = true): void
     {
-        // Update order payment with transaction ID
-        $this->updateOrderPayment($order, $transactionId, $gatewayData);
+        try {
+            // Update order payment with transaction ID
+            $this->updateOrderPayment($order, $transactionId, $gatewayData);
 
-        if ($addTransactionHistory) {
-            // Create transaction history entry for refund support (matches drop-in UI pattern)
-            $this->createTransactionHistory($order, $transactionId, $gatewayData);
-        }
+            if ($addTransactionHistory) {
+                // Create transaction history entry for refund support (matches drop-in UI pattern)
+                $this->createTransactionHistory($order, $transactionId, $gatewayData);
+            }
 
-        // Store payment method ID in OrderAdditionalInfo (required for refunds)
-        $this->storePaymentMethodId($order);
+            if (!empty($gatewayData['installment']) && is_array($gatewayData['installment'])) {
+                // Add installment details to order history
+                $this->addHppInstallmentOrderHistoryMessage($order, $gatewayData['installment']);
+            }
 
-        // Update order status to payment accepted
-        if (!$this->isOrderAlreadyPaid($order)) {
-            $this->updateOrderToPaid($order);
+            // Store payment method ID in OrderAdditionalInfo (required for refunds)
+            $this->storePaymentMethodId($order);
+
+            // Update order status to payment accepted
+            if (!$this->isOrderAlreadyPaid($order)) {
+                $this->updateOrderToPaid($order);
+            }
+        } catch (\Exception $e) {
+            $this->logError('Exception during payment completion', [
+                'order_id' => $order->id,
+                'transaction_id' => $transactionId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
     }
 
@@ -211,16 +226,19 @@ class HppHelper
     }
 
     /**
-     * Update order to paid status
+     * Update order to paid status, creates history entry and sends payment email
      *
      * @param \Order $order Order to update
-     * @param string $transactionId Transaction ID
      * @return void
      */
     private function updateOrderToPaid(\Order $order): void
     {
-        $order->setCurrentState((int)\Configuration::get('PS_OS_PAYMENT'));
-        $order->save();
+        $newState = (int)\Configuration::get('PS_OS_PAYMENT');
+
+        $history = new \OrderHistory();
+        $history->id_order = (int)$order->id;
+        $history->changeIdOrderState($newState, $order);
+        $history->addWithemail(true);
     }
 
     /**
@@ -382,5 +400,58 @@ class HppHelper
             null,
             'GlobalPayments'
         );
+    }
+
+    /**
+     * Add HPP installment payment details to order history
+     *
+     * @param \Order $order
+     * @param array $installmentData
+     * @return void
+     */
+    private function addHppInstallmentOrderHistoryMessage(\Order $order, array $installmentData): void
+    {
+        try {
+            $orderId = $order->id;
+            $count = $installmentData['terms']['count'] ?? 'N/A';
+            $timeUnit = $installmentData['terms']['time_unit'] ?? 'month';
+            $financedAmount = $this->formatAmount($installmentData['terms']['total_amount'] ?? null);
+            $installmentFee = $this->formatAmount($installmentData['terms']['fees']['total_amount'] ?? null);
+            $monthlyAmount = $this->formatAmount($installmentData['terms']['total_plan_cost'] ?? null);
+            $currency = $installmentData['terms']['currency'] ?? '';
+
+            $message = sprintf(
+                'Order id: %s | Payment Method: Visa Installments | Installments number: %s %s | Total Financed Amount: %s',
+                $orderId,
+                $count,
+                $timeUnit . 's',
+                $financedAmount . ' ' . $currency
+            );
+
+            $mappedData = [
+                'orderId' => $orderId,
+                'installments' => $count . ' ' . strtolower($timeUnit),
+                'time_unit' => ucfirst(strtolower($timeUnit)),
+                'financed_amount' => $financedAmount,
+                'finance_fee' => $installmentFee,
+                'monthly_amount' => $monthlyAmount,
+                'currency' => $currency,
+                'message' => $message,
+                'createdAt' => date('Y-m-d H:i:s'),
+            ];
+
+            $orderAdditionalInfo = new OrderAdditionalInfo();
+            $orderAdditionalInfo->setAdditionalInfo(
+                (int) $order->id,
+                'installment_history',
+                array_merge($mappedData, $installmentData) // Include all original installment data for reference
+            );
+        } catch (\Exception $e) {
+            $this->logError('Failed to add installment order history message', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
     }
 }

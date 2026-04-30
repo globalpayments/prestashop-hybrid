@@ -17,7 +17,7 @@
         var gatewayNames = [];
         var isUnsavedTab = false;
         var selectedTab = '';
-        var gateways = ['globalpayments_ucp_enabled'];
+        var gateways = ['globalpayments_ucp_enabled','globalpayments_transit_enabled'];
         var messages = globalpayments_admin_params.messages;
         var isGateway = function (self) {
             return gateways.includes($( self ).attr('name'));

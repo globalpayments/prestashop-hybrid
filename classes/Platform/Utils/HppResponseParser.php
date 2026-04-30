@@ -21,17 +21,17 @@ if (!defined('_PS_VERSION_')) {
 
 /**
  * HPP Response Parser
- * 
+ *
  * Utility class for parsing HPP gateway responses
  * Contains static methods for extracting data from gateway callbacks
  * Used by both HppReturn and HppStatus as the data structure is
- * allmost identical
+ * almost identical
  */
 class HppResponseParser
 {
     /**
      * Extract order ID from gateway response
-     * 
+     *
      * @param array $gatewayData
      * @return int
      */
@@ -61,9 +61,9 @@ class HppResponseParser
 
     /**
      * Extract transaction ID from HPP callback data
-     * 
-     * @param array $data 
-     * @return string|null 
+     *
+     * @param array $data
+     * @return string|null
      */
     public static function extractTransactionId(array $data)
     {
@@ -77,9 +77,9 @@ class HppResponseParser
 
     /**
      * Extract payment status from HPP callback data
-     * 
-     * @param array $data 
-     * @return string 
+     *
+     * @param array $data
+     * @return string
      */
     public static function extractPaymentStatus(array $data)
     {
@@ -92,9 +92,9 @@ class HppResponseParser
 
     /**
      * Extract payment method type from HPP callback data
-     * 
-     * @param array $data 
-     * @return string|null 
+     *
+     * @param array $data
+     * @return string|null
      */
     public static function extractPaymentMethodType(array $data)
     {
@@ -108,9 +108,9 @@ class HppResponseParser
 
     /**
      * Extract payment method result code from HPP callback data
-     * 
-     * @param array $data 
-     * @return string|null 
+     *
+     * @param array $data
+     * @return string|null
      */
     public static function extractPaymentResultCode(array $data)
     {
@@ -123,9 +123,9 @@ class HppResponseParser
 
     /**
      * Extract payment method message from HPP callback data
-     * 
-     * @param array $data 
-     * @return string|null 
+     *
+     * @param array $data
+     * @return string|null
      */
     public static function extractPaymentMessage(array $data)
     {
@@ -148,8 +148,8 @@ class HppResponseParser
         $resultCode = $gatewayData['payment_method']['result'] ?? '';
         $actionResult = $gatewayData['action']['result_code'] ?? '';
         
-        $isSuccessful = strtoupper($status) === 'CAPTURED' && 
-                       $resultCode === '00' && 
+        $isSuccessful = strtoupper($status) === 'CAPTURED' &&
+                       $resultCode === '00' &&
                        strtoupper($actionResult) === 'SUCCESS';
         
         return $isSuccessful;
@@ -182,21 +182,21 @@ class HppResponseParser
     public function obtainSignature(): string
     {
         $signature = "";
-	if ( !empty ( $_REQUEST['X-GP-Signature'] ) ) {
-		$signature = (string) $_REQUEST['X-GP-Signature'];
-	} else {
-		if( function_exists( 'getallheaders' ) ){
-			$headers = getallheaders();
-			$signature = ( isset( $headers['X-GP-Signature'] ) && !empty($headers['X-GP-Signature'] ) ) ? 
-			$headers['X-GP-Signature'] : '';
-		}
-			
-		//Final attempt to get the signature
-		if( "" === $signature && isset( $_SERVER['HTTP_X_GP_SIGNATURE'] ) && 
-		!empty( $_SERVER['HTTP_X_GP_SIGNATURE'] ) ){
-			$signature = (string) $_SERVER['HTTP_X_GP_SIGNATURE'];
-		}
-	}
+        if (!empty($_REQUEST['X-GP-Signature'])) {
+            $signature = (string) $_REQUEST['X-GP-Signature'];
+        } else {
+            if (function_exists('getallheaders')) {
+                $headers = array_change_key_case(getallheaders());
+                $signature = ( isset($headers['x-gp-signature']) && !empty($headers['x-gp-signature']) ) ?
+                $headers['x-gp-signature'] : '';
+            }
+            
+            //Final attempt to get the signature
+            if ("" === $signature && isset($_SERVER['HTTP_X_GP_SIGNATURE']) &&
+            !empty($_SERVER['HTTP_X_GP_SIGNATURE'])) {
+                $signature = (string) $_SERVER['HTTP_X_GP_SIGNATURE'];
+            }
+        }
         return $signature;
     }
 

@@ -159,7 +159,9 @@ class SdkClient implements ClientInterface
         }
         $response = $builder->execute();
 
-        if ($response instanceof Transaction && $response->token) {
+        // Transit doesn't support updateTokenExpiry - skip for Transit gateway
+        $gatewayProvider = $this->arguments['SERVICES_CONFIG']['gatewayProvider'] ?? null;
+        if ($response instanceof Transaction && $response->token && $gatewayProvider !== GatewayProvider::TRANSIT) {
             $this->cardData->token = $response->token;
             $this->cardData->updateTokenExpiry();
         }
@@ -205,22 +207,32 @@ class SdkClient implements ClientInterface
     protected function getTransactionBuilder()
     {
         $result = null;
+        $txnType = $this->getArgument(RequestArg::TXN_TYPE);
 
-        if (in_array($this->getArgument(RequestArg::TXN_TYPE), $this->clientTransactions, true)) {
+        if (in_array($txnType, $this->clientTransactions, true)) {
             $result = ServicesContainer::instance()->getClient('default'); // this value should always be safe here
-        } elseif ($this->getArgument(RequestArg::TXN_TYPE) === 'transactionDetail') {
+        } elseif ($txnType === 'transactionDetail') {
             $result = ReportingService::transactionDetail($this->getArgument('GATEWAY_ID'));
-        } elseif (in_array($this->getArgument(RequestArg::TXN_TYPE), $this->refundTransactions, true)) {
+        } elseif (in_array($txnType, $this->refundTransactions, true)) {
             $subject = Transaction::fromId($this->getArgument('GATEWAY_ID'));
-            $result = $subject->{$this->getArgument(RequestArg::TXN_TYPE)}();
-        } elseif ($this->getArgument(RequestArg::TXN_TYPE) === TransactionType::CAPTURE) {
+            $result = $subject->{$txnType}();
+        } elseif ($txnType === TransactionType::CAPTURE) {
             $subject = Transaction::fromId($this->getArgument('GATEWAY_ID'));
-            $result = $subject->{$this->getArgument(RequestArg::TXN_TYPE)}();
+            $result = $subject->{$txnType}();
         } else {
+            $isAuthTransaction = in_array($txnType, $this->authTransactions, true);
             $subject =
-                in_array($this->getArgument(RequestArg::TXN_TYPE), $this->authTransactions, true)
+                $isAuthTransaction
                 ? $this->cardData : $this->previousTransaction;
-            $result = $subject->{$this->getArgument(RequestArg::TXN_TYPE)}();
+            
+            if ($subject === null) {
+                $errorMsg = $isAuthTransaction 
+                    ? 'Card data is not available for authorization transaction. Token may be missing.'
+                    : 'Previous transaction is not available.';
+                throw new ApiException($errorMsg);
+            }
+            
+            $result = $subject->{$txnType}();
         }
 
         return $result;
@@ -376,12 +388,23 @@ class SdkClient implements ClientInterface
         $this->cardData = new CreditCardData();
         $this->cardData->token = $token->paymentReference;
 
-        if (isset($token->details->expiryYear)) {
+        if (!empty($token->details->expiryYear)) {
             $this->cardData->expYear = $token->details->expiryYear;
         }
 
-        if (isset($token->details->expiryMonth)) {
+        if (!empty($token->details->expiryMonth)) {
             $this->cardData->expMonth = $token->details->expiryMonth;
+        }
+
+        // TransIT gateway requires expiration date even for saved card tokens
+        $gatewayProvider = $this->arguments['SERVICES_CONFIG']['gatewayProvider'] ?? null;
+        if ($gatewayProvider === GatewayProvider::TRANSIT) {
+            if (empty($this->cardData->expYear) || empty($this->cardData->expMonth)) {
+                throw new ApiException(
+                    'Card expiration data is missing for this saved card. ' .
+                    'Please delete this card and save it again, or use a new card.'
+                );
+            }
         }
 
         if (isset($token->details->cardSecurityCode)) {
@@ -416,9 +439,6 @@ class SdkClient implements ClientInterface
         if ($this->hasArgument(RequestArg::ENTRY_MODE)) {
             $this->cardData->entryMethod = $this->getArgument(RequestArg::ENTRY_MODE);
         }
-
-        // Note: requestMultiUseToken should be passed from REQUEST_MULTI_USE_TOKEN argument
-        // based on user's checkbox selection, not automatically set here
     }
 
     protected function threeDSecureEnabled()
@@ -472,7 +492,7 @@ class SdkClient implements ClientInterface
      */
     protected function hasArgument($name)
     {
-        return isset($this->arguments[$name]);
+        return array_key_exists($name, $this->arguments) && $this->arguments[$name] !== null;
     }
 
     /**
@@ -531,7 +551,7 @@ class SdkClient implements ClientInterface
             $this->arguments[RequestArg::SERVICES_CONFIG]
         );
 
-        if ($this->arguments[RequestArg::SERVICES_CONFIG]['debug']) {
+        if (!empty($this->arguments[RequestArg::SERVICES_CONFIG]['debug'])) {
             $gatewayConfig->requestLogger = new SampleRequestLogger(new Logger(_PS_ROOT_DIR_ . '/var/logs/'));
         }
 

@@ -129,10 +129,21 @@ class GlobalPaymentsPayForOrderModuleFrontController extends ModuleFrontControll
                 $cardDetails = $order->cardData->details;
 
                 $orderPayment->payment_method = $activeGateway->title;
-                $orderPayment->card_number = $cardDetails->cardLast4;
-                $orderPayment->card_brand = $cardDetails->cardType;
-                $orderPayment->card_expiration = $cardDetails->expiryMonth . '/' . $cardDetails->expiryYear;
-                $orderPayment->card_holder = $order->cardHolderName;
+                // Handle different property names for new cards vs saved cards
+                if (null === $muTokenId) {
+                    // New card - uses cardLast4
+                    $orderPayment->card_number = $cardDetails->cardLast4 ?? '';
+                } else {
+                    // Saved card - uses last4
+                    $orderPayment->card_number = $cardDetails->last4 ?? '';
+                }
+                $orderPayment->card_brand = $cardDetails->cardType ?? '';
+                $expiryMonth = $cardDetails->expiryMonth ?? '';
+                $expiryYear = $cardDetails->expiryYear ?? '';
+                $orderPayment->card_expiration = ('' === $expiryMonth && '' === $expiryYear)
+                    ? ''
+                    : $expiryMonth . '/' . $expiryYear;
+                $orderPayment->card_holder = $order->cardHolderName ?? '';
                 $orderPayment->transaction_id = $transactionId;
                 $orderPayment->save();
             }
@@ -157,9 +168,17 @@ class GlobalPaymentsPayForOrderModuleFrontController extends ModuleFrontControll
                 'error' => false,
             ];
         } catch (Exception $e) {
+            PrestaShopLogger::addLog(
+                'GlobalPayments PayForOrder Error: ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR,
+                $e->getCode(),
+                'Order',
+                $orderId,
+                true
+            );
             $response = [
                 'error' => true,
-                'message' => $e->getMessage(),
+                'message' => 'An error occurred while processing your payment. Please try again or contact support.',
             ];
         }
 

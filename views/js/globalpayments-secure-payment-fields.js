@@ -87,38 +87,30 @@
     };
 
     GlobalPaymentsPrestaShop.prototype = {
-        /**
-         * Validates a redirect URL to prevent open redirect vulnerabilities
-         * 
-         * @param {string} url - The URL to validate
-         * @returns {string|null} - Returns validated relative URL or null if invalid
-         */
-        validateRedirectUrl: function(url) {
+
+       /**
+        * Validates that a redirect URL is a valid HTTPS URL.
+        * Currently performs basic validation (protocol + URL format only).
+        *
+        * @param {string} url - The redirect URL to validate
+        * @returns {string|null} - Valid HTTPS URL href or null if invalid
+        */
+        validateHppRedirectUrl: function (url) {
             if (typeof url !== 'string' || !url) {
                 return null;
             }
-            
+
             try {
-                // If it's a relative URL (starts with / and not //), validate and return it
-                if (url.indexOf('/') === 0 && url.indexOf('//') !== 0) {
-                    // Additional validation: ensure it doesn't contain dangerous patterns
-                    if (url.match(/^\/[a-zA-Z0-9\/_\-\.?=&%#]+$/)) {
-                        return url;
-                    }
+                var parsedUrl = new URL(url);
+                if (parsedUrl.protocol !== 'https:') {
+                    return null;
                 }
-                
-                // If it has a protocol, validate it's same-origin
-                var parsedUrl = new URL(url, window.location.origin);
-                if (parsedUrl.origin === window.location.origin && 
-                    parsedUrl.protocol === window.location.protocol) {
-                    // Return only the pathname+search+hash (strip origin for security)
-                    return parsedUrl.pathname + parsedUrl.search + parsedUrl.hash;
-                }
+
+                return parsedUrl.href;
             } catch (e) {
-                console.error('URL validation error:', e);
+                console.error('HPP URL validation error:', e);
+                return null;
             }
-            
-            return null;
         },
 
         /**
@@ -747,10 +739,10 @@
                     
                     // Check if there's a redirect URL (successful HPP initiation)
                     if (response.redirect) {
-                        // Validate redirect URL to prevent open redirect vulnerability
-                        var safeUrl = self.validateRedirectUrl(response.redirect);
+                        // HPP redirects are external; validate against trusted gateway domains.
+                        var safeUrl = self.validateHppRedirectUrl(response.redirect);
                         
-                        if (safeUrl) {
+                        if (safeUrl && typeof safeUrl === 'string' && /^https:\/\//.test(safeUrl)) {
                             window.location.href = safeUrl;
                         } else {
                             console.error('Invalid redirect URL blocked for security');

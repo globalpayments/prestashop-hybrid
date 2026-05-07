@@ -3,7 +3,10 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.0.0 (04/30/26)
+## Latest Version ## v2.0.1 (05/07/26)
+- Added fix for HPP redirect issue
+
+## v2.0.0 (04/30/26)
 - Added Support for TransIT gateway
 - GPAPI: Updates to gateway response header handling
 - GPAPI: VISA installments filtering for HPP 

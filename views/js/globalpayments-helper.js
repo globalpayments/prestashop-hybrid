@@ -41,40 +41,6 @@
 
     Helper.prototype = {
         /**
-         * Validates a redirect URL to prevent open redirect vulnerabilities
-         * 
-         * @param {string} url - The URL to validate
-         * @returns {string|null} - Returns validated relative URL or null if invalid
-         */
-        validateRedirectUrl: function(url) {
-            if (typeof url !== 'string' || !url) {
-                return null;
-            }
-            
-            try {
-                // If it's a relative URL (starts with / and not //), extract and return it
-                if (url.indexOf('/') === 0 && url.indexOf('//') !== 0) {
-                    // Additional validation: ensure it doesn't contain dangerous patterns
-                    if (url.match(/^\/[a-zA-Z0-9\/_\-\.?=&%#]+$/)) {
-                        return url;
-                    }
-                }
-                
-                // If it has a protocol, validate it's same-origin
-                var parsedUrl = new URL(url, window.location.origin);
-                if (parsedUrl.origin === window.location.origin && 
-                    parsedUrl.protocol === window.location.protocol) {
-                    // Return only the pathname+search+hash (strip origin for security)
-                    return parsedUrl.pathname + parsedUrl.search + parsedUrl.hash;
-                }
-            } catch (e) {
-                console.error('URL validation error:', e);
-            }
-            
-            return null;
-        },
-
-        /**
          * Add important event handlers for controlling the payment experience during checkout
          *
          * @returns
@@ -171,15 +137,7 @@
                 success: function (data) {
                     data = JSON.parse(data);
                     if (data.redirect) {
-                        // Use validation function to prevent open redirect vulnerability
-                        var safeUrl = self.validateRedirectUrl(data.redirect);
-                        
-                        if (safeUrl) {
-                            window.location.href = safeUrl;
-                        } else {
-                            console.error('Invalid redirect URL blocked for security');
-                        }
-                        return;
+                        window.location.href = data.redirect;
                     }
                     if (data.error === false) {
                         return;

@@ -75,6 +75,7 @@ class InitiatePaymentRequest extends AbstractRequest
         $amount = $this->getArgument(RequestArg::AMOUNT);
         $currency = $this->getArgument(RequestArg::CURRENCY);
 
+        $dcc = $this->getArgument(RequestArg::DCC);
         $billingAddress = $this->getArgument(RequestArg::BILLING_ADDRESS);
         $shippingAddress = $this->getArgument(RequestArg::SHIPPING_ADDRESS);
 
@@ -187,6 +188,7 @@ class InitiatePaymentRequest extends AbstractRequest
             PaymentMethodUsageMode::SINGLE
         );
 
+        $hppBuilder->withCurrencyConversionMode(((int) ($dcc ?? 0)) === 1);
         $transaction = $hppBuilder->execute();
 
         return $transaction;

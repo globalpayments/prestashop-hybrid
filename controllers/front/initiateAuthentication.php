@@ -38,10 +38,39 @@ class GlobalPaymentsInitiateAuthenticationModuleFrontController extends ModuleFr
     {
         parent::initContent();
 
+        // Check request method
+        if ('POST' !== $_SERVER['REQUEST_METHOD']) {
+            return;
+        }
+
+        // Check Content-Type (allow charset parameter)
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        if (strpos($contentType, 'application/json') === false) {
+            return;
+        }
+
         $gateway = $this->module->getActiveGateway();
 
+        header('Content-Type: application/json');
+
         if (!$gateway || $gateway->id !== GatewayId::GP_UCP) {
-            return;
+            http_response_code(503);
+            echo json_encode([
+                'error' => true,
+                'message' => 'Gateway not available',
+            ]);
+            exit;
+        }
+
+        // Security verification to prevent carding attacks
+        $securityCheck = $gateway->verifyThreeDSecureRequestSecurity();
+        if ($securityCheck !== true) {
+            http_response_code(429);
+            echo json_encode([
+                'error' => true,
+                'message' => $securityCheck['message'],
+            ]);
+            exit;
         }
 
         $data = json_decode(Tools::file_get_contents('php://input'));

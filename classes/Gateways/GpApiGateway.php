@@ -38,6 +38,7 @@ use GlobalPayments\PaymentGatewayProvider\Requests\IntegrationType;
 use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
 use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\PaymentGatewayProvider\Requests\RequestArg;
+use GlobalPayments\PaymentGatewayProvider\Security\ThreeDSecureSecurity;
 
 
 if (!defined('_PS_VERSION_')) {
@@ -247,6 +248,8 @@ class GpApiGateway extends AbstractGateway
             'appId' => $this->getCredentialSetting('appId'),
             'appKey' => $this->getCredentialSetting('appKey'),
             'dataResidency' => (\Configuration::get($this->id . '_transactionRegion') == 'europe') ? 'EU' : 'NONE',
+            'integrationMethod' => $this->integrationType,
+            'dcc' => (int) \Configuration::get($this->id . '_dcc'),
             'accountName' => $this->getCredentialSetting('accountName'),
             'channel' => Channel::CardNotPresent,
             'developerId' => $this->developerId,
@@ -442,6 +445,16 @@ class GpApiGateway extends AbstractGateway
                     ),
                 ],
             ],
+            $this->id . '_dcc' => [
+                'title' => $this->translator->trans('DCC', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable or disable Dynamic Currency Conversion (DCC) for transactions processed through Global Payments.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ],
             $this->id . '_hppEnableGooglePay' => [
                 'title' => $this->translator->trans('HPP: Enable Google Pay', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'switch',
@@ -585,6 +598,38 @@ class GpApiGateway extends AbstractGateway
         return $this->client->submitRequest($request);
     }
 
+    /**
+     * Verify 3DS request security to prevent carding attacks.
+     *
+     * Security measures:
+     * 1. Validates cryptographically signed token (can't be forged)
+     * 2. Token is bound to the IP that generated it
+     * 3. Token expires after 5 minutes
+     * 4. Each token can only be used 2 times
+     * 5. Rate limiting: 2 requests per minute per IP
+     * 6. Hourly limit: 10 requests per hour per IP
+     *
+     * @return array|true True if valid, array with error details if not.
+     */
+    public function verifyThreeDSecureRequestSecurity()
+    {
+        $security = new ThreeDSecureSecurity($this->translator);
+        $result = $security->validateSecurityToken();
+
+        // Cleanup expired cache files occasionally
+        $security->cleanupExpiredCache();
+
+        if (!$result['valid']) {
+            return [
+                'error' => true,
+                'code' => 'security_failed',
+                'message' => $result['error'],
+            ];
+        }
+
+        return true;
+    }
+
     public function validateAdminSettings()
     {
         $errors = [];
@@ -674,6 +719,9 @@ class GpApiGateway extends AbstractGateway
             ['position' => 'bottom', 'priority' => 200]
         );
 
+        // Generate a cryptographically signed token bound to this IP for 3DS security
+        $securityToken = $this->generate3dsSecurityToken();
+
         \Media::addJsDef(
             [
                 'globalpayments_secure_payment_fields_params' => $this->getPaymentFieldsParams(),
@@ -691,17 +739,23 @@ class GpApiGateway extends AbstractGateway
                             [],
                             true
                         ),
-                        'checkEnrollmentUrl' => $context->link->getModuleLink(
-                            $module->name,
-                            'checkEnrollment',
-                            [],
-                            true
+                        'checkEnrollmentUrl' => $this->getSecured3dsUrl(
+                            $context->link->getModuleLink(
+                                $module->name,
+                                'checkEnrollment',
+                                [],
+                                true
+                            ),
+                            $securityToken
                         ),
-                        'initiateAuthenticationUrl' => $context->link->getModuleLink(
-                            $module->name,
-                            'initiateAuthentication',
-                            [],
-                            true
+                        'initiateAuthenticationUrl' => $this->getSecured3dsUrl(
+                            $context->link->getModuleLink(
+                                $module->name,
+                                'initiateAuthentication',
+                                [],
+                                true
+                            ),
+                            $securityToken
                         ),
                     ],
                 ],
@@ -766,11 +820,13 @@ class GpApiGateway extends AbstractGateway
             'cancelUrl' => $context->link->getPageLink('order', true), // Return to checkout on cancel
         ];
 
+        $gatewayOptions = $this->getBackendGatewayOptions();
+
         // Create HPP initiate payment request
         $request = $this->prepareRequest(Requests\TransactionType::HPP_TRANSACTION, $order);
 
         // Set additional arguments after request creation
-        $request->setArguments([
+        $requestArguments = [
             RequestArg::ORDER_ID => $orderId,
             RequestArg::CART_ID => $order->cartId,
             RequestArg::AMOUNT => $order->amount,
@@ -778,7 +834,18 @@ class GpApiGateway extends AbstractGateway
             RequestArg::BILLING_ADDRESS => $order->billingAddress,
             RequestArg::SHIPPING_ADDRESS => $order->shippingAddress,
             RequestArg::ASYNC_PAYMENT_DATA => $hppEndpoints,
-        ]);
+        ];
+
+        if (
+            $this->integrationType === IntegrationType::HOSTED_PAYMENT_PAGE
+            && $gatewayOptions['dcc'] === 1
+        ) {
+            $requestArguments[RequestArg::DCC] = 1;
+        } else {
+            $requestArguments[RequestArg::DCC] = 0;
+        }
+
+        $request->setArguments($requestArguments);
 
         // Use client's submitRequest method which calls doRequest() directly
         // This bypasses the normal SdkClient transaction builder flow

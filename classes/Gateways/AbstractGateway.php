@@ -28,8 +28,8 @@ use GlobalPayments\PaymentGatewayProvider\Platform\Token;
 use GlobalPayments\PaymentGatewayProvider\Platform\Utils;
 use GlobalPayments\PaymentGatewayProvider\Platform\Validator\Admin\Config\Validation as ConfigValidation;
 use GlobalPayments\PaymentGatewayProvider\Requests;
-use GlobalPayments\PaymentGatewayProvider\Requests\IntegrationType;
-use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
+use GlobalPayments\PaymentGatewayProvider\Requests\{IntegrationType, TransactionType};
+use GlobalPayments\PaymentGatewayProvider\Security\ThreeDSecureSecurity;
 use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 use PrestaShopBundle\Translation\TranslatorComponent as Translator;
 
@@ -1186,5 +1186,32 @@ abstract class AbstractGateway implements GatewayInterface
 
             $cardOptions[] = $paymentOption;
         }
+    }
+
+    /**
+     * Generate a signed security token for 3DS requests.
+     *
+     * The token contains timestamp and IP hash, signed with HMAC.
+     * This binds the token to the requesting IP address.
+     *
+     * @return string The signed token (timestamp:ip_hash:signature)
+     */
+    protected function generate3dsSecurityToken(): string
+    {
+        $security = new ThreeDSecureSecurity($this->translator);
+        return $security->generateSecurityToken();
+    }
+
+    /**
+     * Add security token to 3DS endpoint URL.
+     *
+     * @param string $url The base URL
+     * @param string $token The security token
+     * @return string URL with token parameter
+     */
+    protected function getSecured3dsUrl(string $url, string $token): string
+    {
+        $separator = (strpos($url, '?') !== false) ? '&' : '?';
+        return $url . $separator . 'gp3ds_token=' . urlencode($token);
     }
 }

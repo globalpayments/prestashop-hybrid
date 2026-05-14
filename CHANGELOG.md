@@ -3,7 +3,12 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.0.1 (05/07/26)
+## Latest Version ## v2.1.0 (05/14/26)
+### Enhancements:
+- Added support for DCC(Dynamic currency conversion)
+- Security updates to 3DS handling
+
+## v2.0.1 (05/07/26)
 - Added fix for HPP redirect issue
 
 ## v2.0.0 (04/30/26)

@@ -177,12 +177,8 @@
                         $e.preventDefault();
                         $e.stopImmediatePropagation();
 
-                        if (!that.isThreeDSecureEnabled()) {
-                            helper.placeOrder(that.id);
-                            return;
-                        }
-
-                        that.threeDSecure();
+                        // Saved cards skip 3DS - they were already authenticated when first saved
+                        helper.placeOrder(that.id);
                         return;
                     }
 
@@ -688,14 +684,44 @@
                             return true;
                         })
                         .catch(function ( error ) {
-                            console.error(error);
-                            helper.showPaymentError(self.id, self.messages.threeDSFail);
+                            // Extract error message from error.reasons array
+                            var errorMessage = self.messages.threeDSFail;
+                            if (error && error.reasons && error.reasons.length >= 3) {
+                                // Get the message from index 2 (third element)
+                                var reasonMessage = error.reasons[2].message;
+                                try {
+                                    // Parse the JSON string
+                                    var parsedMessage = JSON.parse(reasonMessage);
+                                    if (parsedMessage.message) {
+                                        errorMessage = parsedMessage.message;
+                                    }
+                                } catch (e) {
+                                    // If parsing fails, use default error message
+                                    errorMessage = self.messages.threeDSFail;
+                                }
+                            }
+                            helper.showPaymentError(self.id, errorMessage);
                             return false;
                         });
                 })
                 .catch(function ( error ) {
-                    console.error(error);
-                    helper.showPaymentError(self.id, self.messages.threeDSFail);
+                    // Extract error message from error.reasons array
+                    var errorMessage = self.messages.threeDSFail;
+                    if (error && error.reasons && error.reasons.length >= 3) {
+                        // Get the message from index 2 (third element)
+                        var reasonMessage = error.reasons[2].message;
+                        try {
+                            // Parse the JSON string
+                            var parsedMessage = JSON.parse(reasonMessage);
+                            if (parsedMessage.message) {
+                                errorMessage = parsedMessage.message;
+                            }
+                        } catch (e) {
+                            // If parsing fails, use default error message
+                            errorMessage = self.messages.threeDSFail;
+                        }
+                    } 
+                    helper.showPaymentError(self.id, errorMessage);
                     return false;
                 });
 

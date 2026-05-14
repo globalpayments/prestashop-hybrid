@@ -16,6 +16,7 @@
 namespace GlobalPayments\PaymentGatewayProvider\Requests;
 
 use GlobalPayments\PaymentGatewayProvider\Data\Order;
+use GlobalPayments\PaymentGatewayProvider\Requests\IntegrationType;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -48,6 +49,17 @@ class GetAccessTokenRequest extends AbstractRequest
                 $permissions = array_merge(
                     $permissions,
                     array('INS_POST_Query', 'BIN_GET_Details', 'PMT_POST_Create')
+                );
+            }
+
+            if (
+                !empty($config['dcc'])
+                && $config['dcc'] === 1
+                && ($config['integrationMethod'] ?? null) === IntegrationType::HOSTED_PAYMENT_PAGE
+            ) {
+                $permissions = array_merge(
+                    $permissions,
+                    ['CCS_POST_DCC', 'PMT_POST_Create']
                 );
             }
 

@@ -39,14 +39,48 @@ class GlobalPaymentsCheckEnrollmentModuleFrontController extends ModuleFrontCont
     {
         parent::initContent();
 
-        if ('POST' !== $_SERVER['REQUEST_METHOD'] || 'application/json' !== $_SERVER['CONTENT_TYPE']) {
+        // Check request method
+        if ('POST' !== $_SERVER['REQUEST_METHOD']) {
             return;
+        }
+
+        // Check Content-Type (allow charset parameter)
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        $mediaType = strtolower(trim(explode(';', $contentType)[0] ?? ''));
+        
+        if ($mediaType !== 'application/json') {
+            http_response_code(415);
+            echo json_encode([
+                'error' => true,
+                'message' => 'Unsupported Media Type',
+            ]);
+            exit;
         }
 
         $gateway = $this->module->getActiveGateway();
 
+        header('Content-Type: application/json');
+
         if (!$gateway || $gateway->id !== GatewayId::GP_UCP) {
-            return;
+            http_response_code(503);
+            echo json_encode([
+                'error' => true,
+                'message' => 'Gateway not available',
+                'enrolled' => CheckEnrollmentRequest::NO_RESPONSE,
+            ]);
+            exit;
+        }
+
+        // Security verification to prevent carding attacks
+        $securityCheck = $gateway->verifyThreeDSecureRequestSecurity();
+        if ($securityCheck !== true) {
+            http_response_code(429);
+            echo json_encode([
+                'error' => true,
+                'message' => $securityCheck['message'],
+                'enrolled' => CheckEnrollmentRequest::NO_RESPONSE,
+            ]);
+            exit;
         }
 
         $data = json_decode(Tools::file_get_contents('php://input'));

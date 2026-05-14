@@ -50,4 +50,5 @@ abstract class RequestArg
     public const THREE_D_SECURE_DATA = 'THREE_D_SECURE_DATA';
     public const TXN_MODIFIER = 'TXN_MODIFIER';
     public const TXN_TYPE = 'TXN_TYPE';
+    public const DCC = 'DCC';
 }

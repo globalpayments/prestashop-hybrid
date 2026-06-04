@@ -166,9 +166,6 @@ class HppResponseParser
         $gatewayData = json_decode($rawInput, true);
 
         if (!is_array($gatewayData)) {
-            $this->logError('Invalid gateway response data', [
-                'json_error' => json_last_error_msg(),
-            ]);
             throw new \Exception('Invalid gateway response data');
         }
 

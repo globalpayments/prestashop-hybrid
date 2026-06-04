@@ -183,6 +183,7 @@
             this.toggleCredentialsSettings();
             this.toggleRequiredSettings();
             this.togglePaymentInterfaceSettings();
+            this.toggleAvsCvvSettings();
             this.loadPaymentMethodTabsHash();
             this.syncAccountNameFields();
             this.attachCredentialChangeHandlers();
@@ -190,6 +191,52 @@
             $(document).on('click', this.getEnableSelector(), this.toggleRequiredSettings.bind(this));
             $(document).on('click', this.getCredentialsCheckButtonSelector(), this.checkApiCredentials.bind(this));
             $(document).on('change', this.getPaymentInterfaceSelector(), this.togglePaymentInterfaceSettings.bind(this));
+            // AVS/CVV toggle - bind to specific select element change event
+            var avsCvvSelector = '#' + this.id + '_checkAvsResult';
+            $(document).off('change.globalpaymentsAdmin', avsCvvSelector).on('change.globalpaymentsAdmin', avsCvvSelector, this.toggleAvsCvvSettings.bind(this));
+        },
+
+        /**
+         * Toggle AVS/CVV decline code fields visibility based on Check AVS/CVV Result value
+         */
+        toggleAvsCvvSettings: function () {
+            var self = this;
+            var activeForm = $(this.getActiveFormSelector());
+            
+            // Find the trigger select by ID
+            var triggerId = '#' + this.id + '_checkAvsResult';
+            var trigger = activeForm.find(triggerId);
+            
+            // Also try to find by class as fallback
+            if (trigger.length === 0) {
+                trigger = activeForm.find('select.avs-cvv-toggle-trigger');
+            }
+            
+            if (trigger.length === 0) {
+                return;
+            }
+            
+            // Get the select element value (Yes = 1, No = 0)
+            var isEnabled = trigger.val() === '1';
+            
+            // Find AVS and CVV decline code fields by class or ID and show/hide their form-groups
+            // Method 1: Find by class on the multi-select wrapper div
+            activeForm.find('.avs-cvv-toggle').each(function() {
+                $(this).closest('.form-group').toggle(isEnabled);
+            });
+            
+            // Method 2: Find by data attribute on multi-select wrapper
+            activeForm.find('[data-field-id$="_avsDeclineCodes"], [data-field-id$="_cvvDeclineCodes"]').each(function() {
+                $(this).closest('.form-group').toggle(isEnabled);
+            });
+            
+            // Method 3: Find by field name directly (covers all cases)
+            activeForm.find('[name="' + this.id + '_avsDeclineCodes"], [name="' + this.id + '_avsDeclineCodes[]"]').each(function() {
+                $(this).closest('.form-group').toggle(isEnabled);
+            });
+            activeForm.find('[name="' + this.id + '_cvvDeclineCodes"], [name="' + this.id + '_cvvDeclineCodes[]"]').each(function() {
+                $(this).closest('.form-group').toggle(isEnabled);
+            });
         },
 
         /**

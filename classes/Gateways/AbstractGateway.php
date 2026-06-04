@@ -24,6 +24,7 @@ use GlobalPayments\PaymentGatewayProvider\Data\Order;
 use GlobalPayments\PaymentGatewayProvider\Handlers\HandlerInterface;
 use GlobalPayments\PaymentGatewayProvider\Handlers\InvalidCardHandler;
 use GlobalPayments\PaymentGatewayProvider\Handlers\PaymentTokenHandler;
+use GlobalPayments\PaymentGatewayProvider\Handlers\VerificationHandler;
 use GlobalPayments\PaymentGatewayProvider\Platform\Token;
 use GlobalPayments\PaymentGatewayProvider\Platform\Utils;
 use GlobalPayments\PaymentGatewayProvider\Platform\Validator\Admin\Config\Validation as ConfigValidation;
@@ -136,6 +137,7 @@ abstract class AbstractGateway implements GatewayInterface
      * @var HandlerInterface[]
      */
     public $successHandlers = [
+        VerificationHandler::class,
         PaymentTokenHandler::class,
     ];
 
@@ -195,6 +197,27 @@ abstract class AbstractGateway implements GatewayInterface
      * @var bool
      */
     public $enableInstallments = false;
+
+    /**
+     * Check AVS/CVV Result (Yes/No)
+     *
+     * @var bool
+     */
+    public $checkAvsResult = false;
+
+    /**
+     * AVS decline codes (comma-separated)
+     *
+     * @var string
+     */
+    public $avsDeclineCodes = '';
+
+    /**
+     * CVV decline codes (comma-separated)
+     *
+     * @var string
+     */
+    public $cvvDeclineCodes = '';
 
     public function __construct()
     {
@@ -277,6 +300,29 @@ abstract class AbstractGateway implements GatewayInterface
             $this->enableBlikPayment = false;
             $this->enableOpenBanking = false;
         }
+
+        // AVS/CVV settings
+        $checkAvsResult = \Configuration::get($this->id . '_checkAvsResult');
+        if (false === $checkAvsResult) {
+            $checkAvsResult = '0';
+            \Configuration::updateValue($this->id . '_checkAvsResult', $checkAvsResult);
+        }
+
+        $avsDeclineCodes = \Configuration::get($this->id . '_avsDeclineCodes');
+        if (false === $avsDeclineCodes) {
+            $avsDeclineCodes = 'N,R,U,S';
+            \Configuration::updateValue($this->id . '_avsDeclineCodes', $avsDeclineCodes);
+        }
+
+        $cvvDeclineCodes = \Configuration::get($this->id . '_cvvDeclineCodes');
+        if (false === $cvvDeclineCodes) {
+            $cvvDeclineCodes = 'N,P';
+            \Configuration::updateValue($this->id . '_cvvDeclineCodes', $cvvDeclineCodes);
+        }
+
+        $this->checkAvsResult = $checkAvsResult === '1';
+        $this->avsDeclineCodes = $avsDeclineCodes;
+        $this->cvvDeclineCodes = $cvvDeclineCodes;
 
         foreach ($this->getGatewayFormFields() as $key => $options) {
             /**
@@ -394,6 +440,71 @@ abstract class AbstractGateway implements GatewayInterface
                 'title' => $this->translator->trans('Sort Order', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'text',
                 'default' => 0,
+            ],
+            // AVS/CVV Verification Settings (like Magento)
+            $this->id . '_checkAvsResult' => [
+                'title' => $this->translator->trans('Check AVS/CVV Result', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'class' => 'avs-cvv-toggle-trigger',
+                'description' => $this->translator->trans(
+                    'Enable or disable AVS (Address Verification Service) and CVV (Card Verification Value) result checking. When enabled, transactions can be declined based on the selected decline codes below.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => '0',
+                'options' => [
+                    '0' => $this->translator->trans('No', [], 'Modules.Globalpayments.Admin'),
+                    '1' => $this->translator->trans('Yes', [], 'Modules.Globalpayments.Admin'),
+                ],
+            ],
+            $this->id . '_avsDeclineCodes' => [
+                'title' => $this->translator->trans('AVS Decline Codes', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'multiple' => true,
+                'class' => 'avs-cvv-toggle',
+                'description' => $this->translator->trans(
+                    'Select AVS response codes that should decline the transaction.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 'N,R,U,S',
+                'options' => [
+                    'A' => $this->translator->trans('A - Address matches, zip No Match', [], 'Modules.Globalpayments.Admin'),
+                    'N' => $this->translator->trans('N - Neither address or zip code match', [], 'Modules.Globalpayments.Admin'),
+                    'R' => $this->translator->trans('R - Retry - system unable to respond', [], 'Modules.Globalpayments.Admin'),
+                    'U' => $this->translator->trans('U - Visa / Discover card AVS not supported', [], 'Modules.Globalpayments.Admin'),
+                    'S' => $this->translator->trans('S - Master / Amex card AVS not supported', [], 'Modules.Globalpayments.Admin'),
+                    'Z' => $this->translator->trans('Z - Visa / Discover card 9-digit zip code match, address no match', [], 'Modules.Globalpayments.Admin'),
+                    'W' => $this->translator->trans('W - Master / Amex card 9-digit zip code match, address no match', [], 'Modules.Globalpayments.Admin'),
+                    'Y' => $this->translator->trans('Y - Visa / Discover card 5-digit zip code and address match', [], 'Modules.Globalpayments.Admin'),
+                    'X' => $this->translator->trans('X - Master / Amex card 5-digit zip code and address match', [], 'Modules.Globalpayments.Admin'),
+                    'G' => $this->translator->trans('G - Address not verified for International transaction', [], 'Modules.Globalpayments.Admin'),
+                    'B' => $this->translator->trans('B - Address match, Zip not verified', [], 'Modules.Globalpayments.Admin'),
+                    'C' => $this->translator->trans('C - Address and zip mismatch', [], 'Modules.Globalpayments.Admin'),
+                    'D' => $this->translator->trans('D - Address and zip match', [], 'Modules.Globalpayments.Admin'),
+                    'I' => $this->translator->trans('I - AVS not verified for International transaction', [], 'Modules.Globalpayments.Admin'),
+                    'M' => $this->translator->trans('M - Street address and postal code matches', [], 'Modules.Globalpayments.Admin'),
+                    'P' => $this->translator->trans('P - Address and Zip not verified', [], 'Modules.Globalpayments.Admin'),
+                ],
+            ],
+            $this->id . '_cvvDeclineCodes' => [
+                'title' => $this->translator->trans('CVV Decline Codes', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'multiple' => true,
+                'class' => 'avs-cvv-toggle',
+                'description' => $this->translator->trans(
+                    'Select CVV response codes that should decline the transaction.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 'N,P',
+                'options' => [
+                    'N' => $this->translator->trans('N - Not Matching', [], 'Modules.Globalpayments.Admin'),
+                    'P' => $this->translator->trans('P - Not Processed', [], 'Modules.Globalpayments.Admin'),
+                    'S' => $this->translator->trans('S - Result not present', [], 'Modules.Globalpayments.Admin'),
+                    'U' => $this->translator->trans('U - Issuer not certified', [], 'Modules.Globalpayments.Admin'),
+                    '?' => $this->translator->trans('? - CVV unrecognized', [], 'Modules.Globalpayments.Admin'),
+                ],
             ],
         ];
 
@@ -933,6 +1044,7 @@ abstract class AbstractGateway implements GatewayInterface
             array_merge(
                 [
                     'gatewayProvider' => $this->getGatewayProvider(),
+                    'gatewayProviderId' => $this->id,
                     'integrationMethod' => $this->integrationType,
                 ],
                 $backendGatewayOptions

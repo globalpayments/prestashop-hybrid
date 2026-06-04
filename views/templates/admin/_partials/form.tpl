@@ -40,6 +40,7 @@
                             </button>
                         {elseif $input['type'] === 'select'}
                             {if $input['multiple']=="true"}
+                                <div class="multi-select-wrapper {$input['class']|escape:'htmlall':'UTF-8'}" data-field-id="{$input['name']|escape:'htmlall':'UTF-8'}">
                                 <input
                                     name="{$input['name']|escape:'htmlall':'UTF-8'}"
                                     type="hidden"
@@ -57,11 +58,12 @@
                                     </label>
                                     <br/>
                                 {/foreach}
+                                </div>
                             {else}
                                 <select
                                     name="{$input['name']|escape:'htmlall':'UTF-8'}"
                                     id="{$input['name']|escape:'htmlall':'UTF-8'}"
-                                    class="fixed-width-xl" {$input['class']|escape:'htmlall':'UTF-8'}
+                                    class="fixed-width-xl {$input['class']|escape:'htmlall':'UTF-8'}"
                                     {if $input['required']}required{/if}
                                     {if $input['disabled']}disabled{/if}>
                                     {foreach from=$input['options']['query'] item=option}

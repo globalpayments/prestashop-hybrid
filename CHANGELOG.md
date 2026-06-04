@@ -3,7 +3,14 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.1.0 (05/14/26)
+## Latest Version ## v2.1.1 (06/04/26)
+### Enhancements:
+- Added support for AVS and CVV checks via GP API
+
+### Bug Fixes:
+- Added fix for PHP compatibility issues
+
+## v2.1.0 (05/14/26)
 ### Enhancements:
 - Added support for DCC(Dynamic currency conversion)
 - Security updates to 3DS handling

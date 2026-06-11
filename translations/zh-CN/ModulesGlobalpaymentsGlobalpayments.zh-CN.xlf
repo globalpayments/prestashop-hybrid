@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="admin315ntjt5b5zndtxd6a3" source-language="en-GB" target-language="zh-CN" datatype="plaintext">
+    <body>
+      <trans-unit id="global_payments_transaction_management_history">
+        <source>Global Payments Transaction Management History</source>
+        <target>Global Payments 交易管理历史</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="transaction_management_history">
+        <source>Transaction Management History</source>
+        <target>交易管理历史</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="order_details">
+        <source>Order id: %s | Response: %s | Auth code: %s | Installments number: %s</source>
+        <target>订单 ID：%s | 响应：%s | 授权码：%s | 分期次数：%s</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="approved">
+        <source>Approved</source>
+        <target>已批准</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="hpp_payment_initiated">
+        <source>HPP payment initiated. Transaction ID: %s</source>
+        <target>HPP 付款已发起。交易 ID：%s</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="failed_hpp_redirect">
+        <source>Failed to get HPP redirect URL</source>
+        <target>无法获取 HPP 重定向 URL</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="enable_or_disable_open_banking">
+        <source>Enable or disable Open Banking method.</source>
+        <target>启用或禁用 Open Banking 支付方式。</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="enable_or_disable_blik_payment">
+        <source>Enable or disable Blik payment method.</source>
+        <target>启用或禁用 Blik 支付方式。</target>
+        <note>Line: </note>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

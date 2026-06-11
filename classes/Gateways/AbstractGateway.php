@@ -428,8 +428,8 @@ abstract class AbstractGateway implements GatewayInterface
                 'maxLength' => '25',
                 'description' => $this->translator->trans(
                     'During a Capture or Authorize payment action, this value will be passed along as the
-                    transaction-specific descriptor listed on the customer\'s bank account. Please contact
-                    <a href="mailto:%s?Subject=PrestaShop%%20Transaction%%20Descriptor%%20Option">
+                        transaction-specific descriptor listed on the customer\'s bank account. Please contact
+                        <a href="mailto:%s?Subject=PrestaShop%%20Transaction%%20Descriptor%%20Option">
                     support</a> with any questions regarding this option (maxLength: 25).',
                     ['%s%' => $this->getFirstLineSupportEmail()],
                     'Modules.Globalpayments.Admin'

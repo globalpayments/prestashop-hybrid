@@ -3,7 +3,12 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.1.1 (06/04/26)
+## Latest Version ## v2.1.2 (06/11/26)
+### Enhancements:
+- Updated the PHP SDK version to 14.1.15
+- Added translations for Traditonal and Simplified Chinese
+
+## v2.1.1 (06/04/26)
 ### Enhancements:
 - Added support for AVS and CVV checks via GP API
 

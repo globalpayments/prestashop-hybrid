@@ -23,6 +23,28 @@
         this.attachEventHandlers();
     }
     GlobalPaymentsGetTransactionDetails.prototype = {
+        /**
+         * Sanitize a string to prevent XSS attacks
+         * 
+         * @param {string} str
+         * @returns {string}
+         */
+        sanitizeString: function(str) {
+            if (typeof str !== 'string') {
+                // Convert to string if not already, or return empty string for null/undefined
+                if (str === null || str === undefined) {
+                    return '';
+                }
+                str = String(str);
+            }
+            // Remove any potential script tags and event handlers
+            return str
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                .replace(/on\w+\s*=/gi, '')
+                .replace(/javascript:/gi, '')
+                .replace(/data:/gi, '');
+        },
+
         attachEventHandlers: function() {
             var self = this;
 
@@ -61,21 +83,29 @@
                 } else {
                     self.displayError();
                     self.unblockOnError();
-                    console.log(response.message)
                 }
             }).fail(function(xhr, status, errorThrown) {
                 self.displayError();
                 self.unblockOnError();
-                console.log(xhr.responseJSON.message);
-                console.log(errorThrown);
             });
         },
 
         displayTransactionDetails: function(transactionDetails) {
+            var self = this;
             this.hideError();
 
-            transactionDetails.forEach((transaction) => {
-                this.addTableRow(transaction.label, transaction.value);
+            // Validate that transactionDetails is an array
+            if (!Array.isArray(transactionDetails)) {
+                return;
+            }
+
+            transactionDetails.forEach(function(transaction) {
+                // Validate transaction object has expected properties
+                if (transaction && typeof transaction === 'object') {
+                    var label = transaction.label !== undefined ? transaction.label : '';
+                    var value = transaction.value !== undefined ? transaction.value : '';
+                    self.addTableRow(label, value);
+                }
             });
         },
 
@@ -95,11 +125,24 @@
 
         addTableRow: function(label, value) {
             var tableBody = this.getTableBody();
-            // Create DOM elements safely to prevent XSS
-            var row = $('<tr>');
-            var th = $('<th>').text(label);  // .text() automatically escapes HTML entities
-            var td = $('<td>').text(value);  // .text() automatically escapes HTML entities
-            row.append(th).append(td);
+            
+            // Sanitize inputs to prevent XSS
+            var sanitizedLabel = this.sanitizeString(label);
+            var sanitizedValue = this.sanitizeString(value);
+            
+            // Create DOM elements safely using native methods
+            var row = document.createElement('tr');
+            var th = document.createElement('th');
+            var td = document.createElement('td');
+            
+            // Use textContent which safely escapes HTML entities
+            th.textContent = sanitizedLabel;
+            td.textContent = sanitizedValue;
+            
+            row.appendChild(th);
+            row.appendChild(td);
+            
+            // Append to table body
             tableBody.append(row);
         },
 

@@ -112,7 +112,8 @@
                             <div
                                 id="pay-with-payment-option-{$k|escape:'htmlall':'UTF-8'}-form"
                                 class="js-payment-option-form">
-                                {$ucpOption->getForm()}
+                                {* nofilter: PaymentOption::getForm() returns trusted HTML generated via HelperForm *}
+                                {$ucpOption->getForm() nofilter}
                             </div>
                         </div>
                     {/foreach}

@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
         {foreach from=$gateways item=gateway}
             {if $gateway->id === 'globalpayments_ucp'}
                 {foreach from=$gateway->transactionEndpoints key=key item=endpoint}
-                    '{$key}': '{$endpoint}',
+                    '{$key|escape:'javascript':'UTF-8'}': '{$endpoint|escape:'javascript':'UTF-8'}',
                 {/foreach}
             {/if}
         {/foreach}
@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 id="{$k|escape:'htmlall':'UTF-8'}"
                 aria-labelledby="{$k|escape:'htmlall':'UTF-8'}-tab"
             >
+                {* nofilter: $form contains trusted HTML from HelperForm::generateForm() *}
                 {$form nofilter}
             </div>
         {else}
@@ -205,6 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 id="{$k|escape:'htmlall':'UTF-8'}"
                 aria-labelledby="{$k|escape:'htmlall':'UTF-8'}-tab"
             >
+                {* nofilter: $form contains trusted HTML from HelperForm::generateForm() *}
                 {$form nofilter}
             </div>
         {/if}

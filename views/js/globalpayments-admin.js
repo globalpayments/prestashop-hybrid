@@ -25,6 +25,24 @@
     }
     GlobalPaymentsAdmin.prototype = {
         /**
+         * Sanitize a string to prevent XSS attacks
+         * 
+         * @param {string} str
+         * @returns {string}
+         */
+        sanitizeString: function(str) {
+            if (typeof str !== 'string') {
+                return '';
+            }
+            // Remove any potential script tags and event handlers
+            return str
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                .replace(/on\w+\s*=/gi, '')
+                .replace(/javascript:/gi, '')
+                .replace(/data:/gi, '');
+        },
+
+        /**
          * Add important event handlers
          *
          * @returns
@@ -115,7 +133,8 @@
                 var $line = $('<p/>', { class: 'mb-0' });
                 $line.append($('<strong/>').text(label + ':'));
                 if (value) {
-                    $line.append(' ' + value);
+                    // Use text node to safely append value (prevents XSS)
+                    $line.append(document.createTextNode(' ' + value));
                 }
                 return $line;
             };
@@ -157,7 +176,8 @@
             if (createdAtText) {
                 var $createdLine = $('<p/>', { class: 'mb-0' });
                 $createdLine.append($('<strong/>').text('Created at:'));
-                $createdLine.append(' ' + createdAtText);
+                // Use text node to safely append value (prevents XSS)
+                $createdLine.append(document.createTextNode(' ' + createdAtText));
                 $noteContainer.append($createdLine);
             }
 
@@ -387,7 +407,6 @@
                 }
             }).fail(function (error) {
                 // Silently fail for auto-check - don't show error messages
-                console.log('Auto credentials check failed:', error);
             });
         },
 
@@ -440,16 +459,23 @@
                 showLoader: true,
             }).done(function (result) {
                 if (result.error) {
-                    alert(result.message);
+                    alert(self.sanitizeString(result.message));
                 } else {
-                    $('<div class=\'globalpayments-credentials-success\'>' + result.message + '</div>').insertAfter(button);
+                    // Create element safely to prevent XSS - use text() instead of HTML concatenation
+                    var successDiv = $('<div>').addClass('globalpayments-credentials-success');
+                    // Sanitize and use text() to safely set content (escapes HTML entities)
+                    successDiv.text(self.sanitizeString(result.message));
+                    successDiv.insertAfter(button);
                     // Populate the appropriate account name dropdown based on production mode
                     if (result.accountName && result.accountName.length > 0) {
                         self.populateAccountNameDropdown(result.accountName);
                     }
                 }
             }).fail(function (error) {
-                alert(error.responseJSON.message);
+                var errorMsg = error.responseJSON && error.responseJSON.message 
+                    ? self.sanitizeString(error.responseJSON.message) 
+                    : 'An error occurred';
+                alert(errorMsg);
             }).always(function () {
                 button.text(self.messages.credentialsCheck).attr('disabled', false);
             });
@@ -499,6 +525,7 @@
          * Populate account name dropdown with API results
          */
         populateAccountNameDropdown: function (accountNames) {
+            var self = this;
             var selectors = this.getAccountNameSelectors();
             var dropdown = $(selectors.dropdown);
             var hiddenField = $(selectors.hidden);
@@ -507,19 +534,43 @@
             // Clear existing options except the first default option
             dropdown.find('option:not(:first)').remove();
 
-            // Add each returned account name as an option
-            for (var i = 0; i < accountNames.length; i++) {
-                var accountName = accountNames[i].name;
-                dropdown.append(new Option(accountName, accountName));
+            // Validate accountNames is an array
+            if (!Array.isArray(accountNames)) {
+                return;
             }
 
+            // Add each returned account name as an option
+            for (var i = 0; i < accountNames.length; i++) {
+                // Validate account object exists and has name property
+                if (!accountNames[i] || typeof accountNames[i].name !== 'string') {
+                    continue;
+                }
+                // Sanitize the account name to prevent XSS
+                var accountName = self.sanitizeString(accountNames[i].name);
+                // Create option element safely using DOM methods
+                var option = document.createElement('option');
+                option.value = accountName;
+                option.textContent = accountName;
+                dropdown.append(option);
+            }
+
+            // Sanitize savedValue for safe comparison
+            var sanitizedSavedValue = self.sanitizeString(savedValue || '');
+
             // Set the value: prioritize saved database value, then first available option
-            if (savedValue && savedValue !== '' && savedValue !== 'Select Account' && 
-                dropdown.find('option[value="' + savedValue + '"]').length > 0) {
-                dropdown.val(savedValue);
-            } else if (accountNames.length > 0) {
-                dropdown.val(accountNames[0].name);
-                hiddenField.val(accountNames[0].name);
+            if (sanitizedSavedValue && sanitizedSavedValue !== '' && sanitizedSavedValue !== 'Select Account') {
+                // Check if option exists using safe method (not selector injection)
+                var optionExists = dropdown.find('option').filter(function() {
+                    return $(this).val() === sanitizedSavedValue;
+                }).length > 0;
+                
+                if (optionExists) {
+                    dropdown.val(sanitizedSavedValue);
+                }
+            } else if (accountNames.length > 0 && accountNames[0] && typeof accountNames[0].name === 'string') {
+                var firstAccountName = self.sanitizeString(accountNames[0].name);
+                dropdown.val(firstAccountName);
+                hiddenField.val(firstAccountName);
             }
         },
 

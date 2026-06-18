@@ -35,31 +35,31 @@
                 <div class="gp-modal-content">
                     <div class="gp-installment-summary">
                         <div class="gp-installment-badge">
-                            <span class="gp-plan-months">{$installmentsData['terms']['count']}</span>
-                            <span class="gp-plan-label">{$installmentsData['time_unit']} Plan</span>
+                            <span class="gp-plan-months">{$installmentsData['terms']['count']|escape:'htmlall':'UTF-8'}</span>
+                            <span class="gp-plan-label">{$installmentsData['time_unit']|escape:'htmlall':'UTF-8'} Plan</span>
                         </div>
 
                         <div class="gp-installment-details">
                             <div class="gp-detail-row">
                                 <span class="gp-label">Order amount:</span>
                                 <span class="gp-value">
-                                    {$installmentsData['order_amount']} {$installmentsData['currency']}
+                                    {$installmentsData['order_amount']|escape:'htmlall':'UTF-8'} {$installmentsData['currency']|escape:'htmlall':'UTF-8'}
                                 </span>
                             </div>
 
                             <div class="gp-detail-row">
                                 <span class="gp-label">Payment Plan:</span>
                                 <span class="gp-value">
-                                    {$installmentsData['installments']}ly
+                                    {$installmentsData['installments']|escape:'htmlall':'UTF-8'}ly
                                     payments
                                 </span>
                             </div>
 
                             {if $installmentsData['monthly_amount']}
                                 <div class="gp-detail-row">
-                                    <span class="gp-label">{$installmentsData['time_unit']}ly amount:</span>
-                                    <span class="gp-value">{$installmentsData['monthly_amount']}
-                                        {$installmentsData['currency']}/{$installmentsData['time_unit']}
+                                    <span class="gp-label">{$installmentsData['time_unit']|escape:'htmlall':'UTF-8'}ly amount:</span>
+                                    <span class="gp-value">{$installmentsData['monthly_amount']|escape:'htmlall':'UTF-8'}
+                                        {$installmentsData['currency']|escape:'htmlall':'UTF-8'}/{$installmentsData['time_unit']|escape:'htmlall':'UTF-8'}
                                 (incl. fee)
                                 </span>
                                 </div>
@@ -68,19 +68,19 @@
                             {if $installmentsData['terms']['fees']['total_amount']}
                                 <div class="gp-detail-row">
                                     <span class="gp-label">Installment Fee:</span>
-                                    <span class="gp-value">{$installmentsData['finance_fee']} {$installmentsData['currency']}</span>
+                                    <span class="gp-value">{$installmentsData['finance_fee']|escape:'htmlall':'UTF-8'} {$installmentsData['currency']|escape:'htmlall':'UTF-8'}</span>
                                 </div>
                             {/if}
 
                             <div class="gp-detail-row gp-highlight">
                                 <span class="gp-label">Interest Rate:</span>
-                                <span class="gp-value">{$installmentsData['terms']['cost_percentage']}% APR</span>
+                                <span class="gp-value">{$installmentsData['terms']['cost_percentage']|escape:'htmlall':'UTF-8'}% APR</span>
                             </div>
 
                             {if $installmentsData['terms']['total_amount']}
                                 <div class="gp-detail-row">
                                     <span class="gp-label">Total Amount:</span>
-                                    <span class="gp-value">{$installmentsData['financed_amount']} {$installmentsData['currency']}</span>
+                                    <span class="gp-value">{$installmentsData['financed_amount']|escape:'htmlall':'UTF-8'} {$installmentsData['currency']|escape:'htmlall':'UTF-8'}</span>
                                 </div>
                             {/if}
                         </div>
@@ -88,13 +88,13 @@
 
                     {if $installmentsData['terms']['description']}
                         <div class="gp-installment-description">
-                            <p>{$installmentsData['terms']['description']}</p>
+                            <p>{$installmentsData['terms']['description']|escape:'htmlall':'UTF-8'}</p>
                         </div>
                     {/if}
 
                     {if !empty($installmentsData['terms']['terms_and_conditions_url'])}
                         <div class="gp-installment-terms">
-                            <a href="{$installmentsData['terms']['terms_and_conditions_url']}"
+                            <a href="{$installmentsData['terms']['terms_and_conditions_url']|escape:'htmlall':'UTF-8'}"
                                target="_blank"
                                rel="noopener noreferrer"
                                class="gp-terms-link">

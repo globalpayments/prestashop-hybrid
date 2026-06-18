@@ -15,6 +15,7 @@
 
 use GlobalPayments\PaymentGatewayProvider\Data\Order as OrderModel;
 use GlobalPayments\PaymentGatewayProvider\Gateways\GatewayId;
+use GlobalPayments\PaymentGatewayProvider\Platform\Helper\RequestHelper;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -73,7 +74,25 @@ class GlobalPaymentsInitiateAuthenticationModuleFrontController extends ModuleFr
             exit;
         }
 
-        $data = json_decode(Tools::file_get_contents('php://input'));
+        $requestBody = RequestHelper::getRequestBody();
+        if (empty($requestBody)) {
+            http_response_code(400);
+            echo json_encode([
+                'error' => true,
+                'message' => 'Invalid request body',
+            ]);
+            exit;
+        }
+
+        $data = json_decode($requestBody);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_object($data)) {
+            http_response_code(400);
+            echo json_encode([
+                'error' => true,
+                'message' => 'Invalid JSON data',
+            ]);
+            exit;
+        }
 
         $amount = $data->order->amount ?? null;
         $billingAddress = $data->order->billingAddress ?? null;

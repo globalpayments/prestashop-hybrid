@@ -119,6 +119,25 @@
         },
 
         /**
+         * Sanitize a string to prevent XSS attacks
+         * 
+         * @param {string} str
+         * @returns {string}
+         */
+        sanitizeString: function(str) {
+            if (typeof str !== 'string') {
+                return '';
+            }
+            // Remove any potential script tags and event handlers
+            var sanitized = str
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                .replace(/on\w+\s*=/gi, '')
+                .replace(/javascript:/gi, '')
+                .replace(/data:/gi, '');
+            return sanitized;
+        },
+
+        /**
          *  Shows payment error and scrolls to it
          * 
          * @param {string} id 
@@ -132,22 +151,30 @@
             // Remove notices from all sources
             $('.globalpayments-checkout-error').remove();
 
-            // Create error div safely to prevent XSS
-            var errorDiv = $('<div>').addClass('globalpayments-checkout-error');
-            
-            // Check if message contains validation error markup
-            if (-1 === message.indexOf('globalpayments-validation-error')) {
-                // Create safe list structure
-                var ul = $('<ul>').addClass('globalpayments-validation-error');
-                var li = $('<li>').text(message);  // .text() escapes HTML entities
-                ul.append(li);
-                errorDiv.append(ul);
-            } else {
-                // Message already has markup structure, use text() to safely display
-                errorDiv.text(message);
+            // Sanitize and validate message input
+            if (typeof message !== 'string' || message.length === 0) {
+                message = 'An error occurred during payment processing.';
             }
             
-            $form.prepend(errorDiv);
+            // Sanitize the message to remove potential XSS vectors
+            var sanitizedMessage = this.sanitizeString(message);
+
+            // Create error div safely using DOM methods (not innerHTML/html())
+            var errorDiv = document.createElement('div');
+            errorDiv.className = 'globalpayments-checkout-error';
+            
+            var ul = document.createElement('ul');
+            ul.className = 'globalpayments-validation-error';
+            
+            var li = document.createElement('li');
+            // Use textContent which safely escapes HTML entities
+            li.textContent = sanitizedMessage;
+            
+            ul.appendChild(li);
+            errorDiv.appendChild(ul);
+            
+            // Prepend to form using jQuery
+            $(errorDiv).prependTo($form);
 
             $('html, body').animate({
                 scrollTop: ($form.offset().top - 100)

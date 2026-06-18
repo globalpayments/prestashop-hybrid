@@ -127,8 +127,8 @@
 
                 $(helper.getPlaceOrderButtonSelector()).on('click', function ($e) {
                     // Get the currently selected payment method
-                    var paymentMethodSelected = $('.payment-options input.ps-shown-by-js:checked').attr('data-module-name');
-                    
+                    var paymentMethodSelected = $('.payment-options input.ps-shown-by-js:checked , .payment-option__input.form-check-input.ps-shown-by-js:checked').attr('data-module-name');
+
                     // For HPP mode, use AJAX to prevent raw JSON error display
                     if (isHppEnabled && paymentMethodSelected === 'globalpayments_ucp') {
                         $e.preventDefault();

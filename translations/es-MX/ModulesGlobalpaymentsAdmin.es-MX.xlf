@@ -807,6 +807,11 @@ Actualmente, Global Payments no carga esta etapa de seguridad Google Pay con un 
         <target>Endpoint actual:</target>
         <note>Line: </note>
       </trans-unit>
+      <trans-unit id="3a7acaaf53831903f81f59e946fcb3cf">
+        <source>Payment confirmation for this method may take several days. Refunds are only available after a final payment status is received. Please wait for confirmation or contact support if the delay continues.</source>
+        <target>La confirmación de este método de pago puede tomar varios días. Las devoluciones solo estarán disponibles después de que el estatus final de pago sea recibido. Por favor espere la confirmación o contacte a soporte en caso de que el retraso continue.</target>
+        <note>Line: </note>
+      </trans-unit>
     </body>
   </file>
 </xliff>

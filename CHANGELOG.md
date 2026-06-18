@@ -3,7 +3,12 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.1.2 (06/11/26)
+## Latest Version ## v2.1.3 (06/18/26)
+- Added fix for PrestaShop Security Certification Issue
+- Added Refund Eligibility Tooltip for Asynchronous Payments
+- Added fix for Display issues when using HPP with Hummingbird theme on Prestashop 9.1
+
+## v2.1.2 (06/11/26)
 ### Enhancements:
 - Updated the PHP SDK version to 14.1.15
 - Added translations for Traditonal and Simplified Chinese

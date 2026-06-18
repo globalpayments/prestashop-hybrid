@@ -13,26 +13,36 @@
  * @license   LICENSE
  */
 
-use GlobalPayments\PaymentGatewayProvider\Gateways\AbstractGateway;
-use GlobalPayments\PaymentGatewayProvider\Gateways\GatewayId;
-use GlobalPayments\PaymentGatewayProvider\Gateways\GpApiGateway;
-use GlobalPayments\PaymentGatewayProvider\Gateways\TransitGateway;
+use GlobalPayments\PaymentGatewayProvider\Gateways\{
+    AbstractGateway,
+    GatewayId,
+    GpApiGateway,
+    TransitGateway
+};
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\AbstractPaymentMethod;
-use GlobalPayments\PaymentGatewayProvider\PaymentMethods\DigitalWallets\ApplePay;
-use GlobalPayments\PaymentGatewayProvider\PaymentMethods\DigitalWallets\ClickToPay;
-use GlobalPayments\PaymentGatewayProvider\PaymentMethods\DigitalWallets\GooglePay;
+use GlobalPayments\PaymentGatewayProvider\PaymentMethods\DigitalWallets\{
+    ApplePay,
+    ClickToPay,
+    GooglePay
+};
+use GlobalPayments\PaymentGatewayProvider\Platform\{
+    OrderAdditionalInfo,
+    OrderStateInstaller,
+    Token,
+    TransactionHistory,
+    TransactionManagement,
+    Utils
+};
 use GlobalPayments\PaymentGatewayProvider\Platform\Admin\ConfigForm;
-use GlobalPayments\PaymentGatewayProvider\Platform\Admin\Order\View\DigitalWalletsAddress;
-use GlobalPayments\PaymentGatewayProvider\Platform\Admin\Order\View\TransactionManagementTab;
-use GlobalPayments\PaymentGatewayProvider\Platform\Helper\AddressHelper;
-use GlobalPayments\PaymentGatewayProvider\Platform\Helper\CheckoutHelper;
-use GlobalPayments\PaymentGatewayProvider\Platform\OrderAdditionalInfo;
-use GlobalPayments\PaymentGatewayProvider\Platform\OrderStateInstaller;
+use GlobalPayments\PaymentGatewayProvider\Platform\Admin\Order\View\{
+    DigitalWalletsAddress,
+    TransactionManagementTab
+};
+use GlobalPayments\PaymentGatewayProvider\Platform\Helper\{
+    AddressHelper,
+    CheckoutHelper
+};
 use GlobalPayments\PaymentGatewayProvider\Requests\IntegrationType;
-use GlobalPayments\PaymentGatewayProvider\Platform\Token;
-use GlobalPayments\PaymentGatewayProvider\Platform\TransactionHistory;
-use GlobalPayments\PaymentGatewayProvider\Platform\TransactionManagement;
-use GlobalPayments\PaymentGatewayProvider\Platform\Utils;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -101,7 +111,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '2.1.2';
+        $this->version = '2.1.3';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
@@ -580,6 +590,24 @@ class GlobalPayments extends PaymentModule
                         (float) $slip['total_products_tax_incl'] + (float) $slip['total_shipping_tax_incl'];
                 }
 
+                // Check if payment is accepted (state 2)
+                $paymentAcceptedStateId = (int) Configuration::get('PS_OS_PAYMENT') ?: 2;
+                $currentState = (int) $order->getCurrentState();
+                $isPaymentAccepted = ($currentState === $paymentAcceptedStateId);
+                
+                // Check if payment method is Open Banking
+                $isOpenBankingPayment = (
+                    stripos($order->payment, 'Open Banking') !== false 
+                    || stripos($order->payment, 'Bank Payment') !== false
+                );
+
+                // Translated message for Open Banking partial refund not supported
+                $partialRefundNotSupportedMessage = $this->getTranslator()->trans(
+                    'Payment confirmation for this method may take several days. Refunds are only available after a final payment status is received. Please wait for confirmation or contact support if the delay continues.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                );
+
                 Media::addJsDef([
                     'globalpayments_order_data' => [
                         'orderId' => $orderId,
@@ -589,6 +617,12 @@ class GlobalPayments extends PaymentModule
                         'remainingRefundable' => (float) $order->total_paid - $alreadyRefunded,
                         'currency' => (new Currency($order->id_currency))->iso_code,
                         'installmentHistory' => $installmentHistory,
+                        'currentState' => $currentState,
+                        'paymentMethod' => $order->payment,
+                        'isPaymentAccepted' => $isPaymentAccepted,
+                        'isOpenBankingPayment' => $isOpenBankingPayment,
+                        'isPartialRefundDisabled' => ($isPaymentAccepted && $isOpenBankingPayment),
+                        'partialRefundDisabledMessage' => $partialRefundNotSupportedMessage,
                     ],
                 ]);
             }

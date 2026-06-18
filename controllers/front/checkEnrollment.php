@@ -15,6 +15,7 @@
 
 use GlobalPayments\PaymentGatewayProvider\Data\Order as OrderModel;
 use GlobalPayments\PaymentGatewayProvider\Gateways\GatewayId;
+use GlobalPayments\PaymentGatewayProvider\Platform\Helper\RequestHelper;
 use GlobalPayments\PaymentGatewayProvider\Requests\ThreeDSecure\CheckEnrollmentRequest;
 
 if (!defined('_PS_VERSION_')) {
@@ -83,7 +84,27 @@ class GlobalPaymentsCheckEnrollmentModuleFrontController extends ModuleFrontCont
             exit;
         }
 
-        $data = json_decode(Tools::file_get_contents('php://input'));
+        $requestBody = RequestHelper::getRequestBody();
+        if (empty($requestBody)) {
+            http_response_code(400);
+            echo json_encode([
+                'error' => true,
+                'message' => 'Invalid request body',
+                'enrolled' => CheckEnrollmentRequest::NO_RESPONSE,
+            ]);
+            exit;
+        }
+
+        $data = json_decode($requestBody);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_object($data)) {
+            http_response_code(400);
+            echo json_encode([
+                'error' => true,
+                'message' => 'Invalid JSON data',
+                'enrolled' => CheckEnrollmentRequest::NO_RESPONSE,
+            ]);
+            exit;
+        }
 
         $amount = $data->amount ?? null;
         $cardData = isset($data->tokenResponse) ? json_decode($data->tokenResponse) : null;

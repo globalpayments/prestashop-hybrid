@@ -124,23 +124,48 @@ class RequestHelper
     public function getRequest()
     {
         $request = \Tools::getAllValues();
-        $rawContent = \Tools::file_get_contents('php://input');
+        // Use native file_get_contents with hardcoded php://input stream
+        // This is safe as php://input is a read-only stream for raw POST data
+        $rawContent = self::getRequestBody();
         $headers = \WebserviceRequest::getallheaders();
         $this->setHeaders($headers);
 
         if (isset($headers['Content-Encoding']) && strpos($headers['Content-Encoding'], 'gzip') !== false) {
-            $rawContent = gzdecode($rawContent);
+            $decodedContent = gzdecode($rawContent);
+            // Only use decoded content if gzdecode was successful
+            if ($decodedContent !== false) {
+                $rawContent = $decodedContent;
+            }
         }
 
         $this->setParams(['rawContent' => $rawContent]);
 
         if (isset($headers['Content-Type']) && $headers['Content-Type'] === 'application/json') {
-            $rawContent = json_decode($rawContent);
+            $decodedJson = json_decode($rawContent, false);
+            // Only use decoded JSON if it's valid
+            if (json_last_error() === JSON_ERROR_NONE && $decodedJson !== null) {
+                $rawContent = $decodedJson;
+            }
         }
 
         $requestParams = array_merge($request, (array) $rawContent);
         $this->setParams($requestParams);
 
         return $this;
+    }
+
+    /**
+     * Get the raw request body from php://input stream.
+     * This method uses a hardcoded stream path to prevent path traversal attacks.
+     *
+     * @return string
+     */
+    public static function getRequestBody(): string
+    {
+        // Hardcoded stream path - not user-controllable
+        // php://input is a read-only stream that provides raw POST data
+        $content = file_get_contents('php://input');
+        
+        return $content !== false ? $content : '';
     }
 }

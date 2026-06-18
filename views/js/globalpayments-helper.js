@@ -41,6 +41,49 @@
 
     Helper.prototype = {
         /**
+         * Sanitize a string by escaping HTML special characters to prevent XSS.
+         *
+         * @param {string} str
+         * @returns {string}
+         */
+        sanitizeString: function (str) {
+            if (typeof str !== 'string') {
+                return '';
+            }
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        },
+
+        /**
+         * Validate that a redirect URL is safe (same-origin or relative path).
+         *
+         * @param {string} url
+         * @returns {boolean}
+         */
+        isValidRedirectUrl: function (url) {
+            if (typeof url !== 'string' || !url) {
+                return false;
+            }
+            // Block javascript: and data: protocols
+            var lowerUrl = url.toLowerCase().trim();
+            if (lowerUrl.startsWith('javascript:') || lowerUrl.startsWith('data:') || lowerUrl.startsWith('vbscript:')) {
+                return false;
+            }
+            // Allow relative URLs
+            if (url.startsWith('/') && !url.startsWith('//')) {
+                return true;
+            }
+            // Allow same-origin URLs
+            try {
+                var parsed = new URL(url, window.location.origin);
+                return parsed.origin === window.location.origin;
+            } catch (e) {
+                return false;
+            }
+        },
+
+        /**
          * Add important event handlers for controlling the payment experience during checkout
          *
          * @returns
@@ -49,7 +92,7 @@
             var self = this;
             // General
             $(document).ready(function () {
-                $('.payment-options input.ps-shown-by-js').change(function() {
+                    $(".payment-options input.ps-shown-by-js , .payment-option__form-check.form-check input").change(function() {
                     self.toggleSubmitButtons();
                 });
             });
@@ -61,7 +104,7 @@
          * @returns {string}
          */
         getPlaceOrderButtonSelector: function () {
-            return '#payment-confirmation button';
+            return '#payment-confirmation';
         },
 
         /**
@@ -136,8 +179,9 @@
                 data: form.serialize(),
                 success: function (data) {
                     data = JSON.parse(data);
-                    if (data.redirect) {
+                    if (data.redirect && self.isValidRedirectUrl(data.redirect)) {
                         window.location.href = data.redirect;
+                        return;
                     }
                     if (data.error === false) {
                         return;
@@ -168,10 +212,24 @@
             // Remove notices from all sources
             $('.globalpayments-checkout-error').remove();
 
-            if (-1 === message.indexOf('globalpayments-validation-error')) {
-                message = '<ul class="globalpayments-validation-error"><li>' + message + '</li></ul>';
+            // Build error element safely using DOM methods
+            var errorContainer = document.createElement('div');
+            errorContainer.className = 'globalpayments-checkout-error';
+
+            // Check if message already contains validation error markup
+            if (typeof message === 'string' && message.indexOf('globalpayments-validation-error') === -1) {
+                var ul = document.createElement('ul');
+                ul.className = 'globalpayments-validation-error';
+                var li = document.createElement('li');
+                li.textContent = message; // Safe: textContent escapes HTML
+                ul.appendChild(li);
+                errorContainer.appendChild(ul);
+            } else {
+                // For pre-formatted messages, sanitize before inserting
+                errorContainer.textContent = typeof message === 'string' ? message : '';
             }
-            $form.prepend('<div class="globalpayments-checkout-error">' + message + '</div>');
+
+            $form.prepend(errorContainer);
 
             $('html, body').animate({
                 scrollTop: ($form.offset().top - 100)
@@ -264,7 +322,8 @@
          * @returns
          */
         toggleSubmitButtons: function () {
-            var paymentMethodSelected = $('.payment-options input.ps-shown-by-js:checked').attr('data-module-name');
+            var paymentMethodSelected = $('.payment-options input.ps-shown-by-js:checked, .payment-option__input.form-check-input.ps-shown-by-js:checked').attr('data-module-name');
+            // var paymentMethodSelected = $('.payment-options input.ps-shown-by-js:checked').attr('data-module-name');
             var isPaymentMethodSelected = $(this.getPaymentMethodRadioSelector(paymentMethodSelected)).first().is(':checked');
             $('.globalpayments.card-submit').hide();
 
@@ -309,7 +368,9 @@
          * Hide the default PrestaShop 'Place Order' button.
          */
         hidePlaceOrderButton: function() {
+            console.log('hidePlaceOrderButton: ' + this.getPlaceOrderButtonSelector() );
             $(this.getPlaceOrderButtonSelector()).hide();
+
         },
 
         /**
@@ -333,7 +394,7 @@
          * @returns {string}
          */
         getPaymentMethodRadioSelector: function ( id ) {
-            return '.payment-options input.ps-shown-by-js[data-module-name="' + id + '"]';
+            return '.payment-options input.ps-shown-by-js[data-module-name="' + id + '"] , .payment-option__input.form-check-input[data-module-name="'+id+'"]';
         },
 
         validateTermsAndConditions: function(id) {

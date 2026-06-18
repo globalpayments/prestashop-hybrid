@@ -1,4 +1,18 @@
 /**
+ * NOTICE OF LICENSE
+ *
+ * This file is licenced under the Software License Agreement.
+ * With the purchase or the installation of the software in your application
+ * you accept the licence agreement.
+ *
+ * You must not modify, adapt or create derivative works of this source code
+ *
+ * @author    GlobalPayments
+ * @copyright Since 2021 GlobalPayments
+ * @license   LICENSE
+ */
+
+/**
  * GlobalPayments Refund Validation
  * Prevents partial refund form submission if amount exceeds refundable amount
  */
@@ -16,6 +30,141 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Track processed elements to avoid duplicate event listeners
     const processedElements = new WeakSet();
+
+    // ========== TOOLTIP FOR REFUND BUTTON ==========
+    
+    // Check if tooltip should be shown (payment accepted + Open Banking)
+    function shouldShowTooltip() {
+        if (typeof globalpayments_order_data !== 'undefined' && globalpayments_order_data) {
+            return globalpayments_order_data.isPartialRefundDisabled === true;
+        }
+        return false;
+    }
+
+    // Get the tooltip message
+    function getTooltipMessage() {
+        if (typeof globalpayments_order_data !== 'undefined' && globalpayments_order_data && globalpayments_order_data.partialRefundDisabledMessage) {
+            return globalpayments_order_data.partialRefundDisabledMessage;
+        }
+        return 'Payment confirmation for this method may take several days. Refunds are only available after a final payment status is received. Please wait for confirmation or contact support if the delay continues.';
+    }
+
+    // Add custom tooltip CSS styles
+    function addTooltipStyles() {
+        if (document.getElementById('gp-tooltip-styles')) {
+            return;
+        }
+        const style = document.createElement('style');
+        style.id = 'gp-tooltip-styles';
+        style.textContent = `
+            .gp-custom-tooltip {
+                position: absolute;
+                background-color: #000;
+                color: #fff;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                max-width: 300px;
+                z-index: 10000;
+                white-space: normal;
+                line-height: 1.4;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.2s, visibility 0.2s;
+            }
+            .gp-custom-tooltip.show {
+                opacity: 1;
+                visibility: visible;
+            }
+            .gp-custom-tooltip::before {
+                content: '';
+                position: absolute;
+                left: -6px;
+                top: 50%;
+                transform: translateY(-50%);
+                border-width: 6px;
+                border-style: solid;
+                border-color: transparent #000 transparent transparent;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Show tooltip next to element
+    function showTooltip(element, message) {
+        hideTooltip();
+        const tooltip = document.createElement('div');
+        tooltip.id = 'gp-active-tooltip';
+        tooltip.className = 'gp-custom-tooltip';
+        tooltip.textContent = message;
+        document.body.appendChild(tooltip);
+        const rect = element.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        tooltip.style.left = (rect.right + scrollLeft + 10) + 'px';
+        tooltip.style.top = (rect.top + scrollTop + (rect.height / 2) - (tooltip.offsetHeight / 2)) + 'px';
+        setTimeout(function() {
+            tooltip.classList.add('show');
+        }, 10);
+    }
+
+    // Hide tooltip
+    function hideTooltip() {
+        const tooltip = document.getElementById('gp-active-tooltip');
+        if (tooltip) {
+            tooltip.remove();
+        }
+    }
+
+    // Add tooltip to partial refund buttons for Open Banking
+    function addTooltipToButtons() {
+        if (!shouldShowTooltip()) {
+            return;
+        }
+        addTooltipStyles();
+        const message = getTooltipMessage();
+        const partialRefundButtons = document.querySelectorAll(
+            'button[name="partialRefund"], ' +
+            'button.partial-refund-display, ' +
+            'button[id*="partial"], ' +
+            '#desc-order-partial_refund, ' +
+            '.partial-refund-display, ' +
+            'a.partial-refund-display'
+        );
+        partialRefundButtons.forEach(function(button) {
+            if (button.hasAttribute('data-gp-tooltip')) return;
+            button.setAttribute('data-gp-tooltip', 'true');
+            button.addEventListener('mouseenter', function() {
+                showTooltip(button, message);
+            });
+            button.addEventListener('mouseleave', function() {
+                hideTooltip();
+            });
+        });
+        const allButtons = document.querySelectorAll('button, a.btn');
+        allButtons.forEach(function(button) {
+            if (button.hasAttribute('data-gp-tooltip')) return;
+            const buttonText = (button.textContent || button.innerText || '').toLowerCase();
+            if (buttonText.includes('partial refund')) {
+                const isOrderAction = button.closest('.order-actions') || 
+                                     button.closest('.card-body') || 
+                                     button.closest('.panel-footer') ||
+                                     button.closest('.btn-group');
+                if (isOrderAction) {
+                    button.setAttribute('data-gp-tooltip', 'true');
+                    button.addEventListener('mouseenter', function() {
+                        showTooltip(button, message);
+                    });
+                    button.addEventListener('mouseleave', function() {
+                        hideTooltip();
+                    });
+                }
+            }
+        });
+    }
+
+    // ========== END TOOLTIP ==========
 
     // Function to get order data from the page
     function getOrderDataFromPage() {
@@ -204,6 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize validation system
     function initializeValidation() {
+        addTooltipToButtons(); // Add tooltip for refund button
         addEventListeners();
     }
 
@@ -223,6 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (hasNewElements) {
+                addTooltipToButtons(); // Re-apply tooltip for new elements
                 addEventListeners();
             }
         }, 1000); // Throttle to 1 second

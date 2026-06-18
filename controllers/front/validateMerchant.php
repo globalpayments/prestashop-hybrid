@@ -14,6 +14,7 @@
  */
 
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\DigitalWallets\ApplePay;
+use GlobalPayments\PaymentGatewayProvider\Platform\Helper\RequestHelper;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -25,8 +26,70 @@ class GlobalPaymentsValidateMerchantModuleFrontController extends ModuleFrontCon
     {
         parent::initContent();
 
-        $data = json_decode(Tools::file_get_contents('php://input'));
-        $validationUrl = $data->validationUrl;
+        // Get raw POST data using safe method with hardcoded stream
+        $rawContent = RequestHelper::getRequestBody();
+        
+        if (empty($rawContent)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid request']);
+            exit;
+        }
+
+        $data = json_decode($rawContent);
+        
+        if (json_last_error() !== JSON_ERROR_NONE || !is_object($data)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid JSON']);
+            exit;
+        }
+
+        // Validate validationUrl exists and is a string
+        if (!isset($data->validationUrl) || !is_string($data->validationUrl)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing validation URL']);
+            exit;
+        }
+
+        // Validate URL format
+        $validationUrl = filter_var($data->validationUrl, FILTER_VALIDATE_URL);
+        if ($validationUrl === false) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid validation URL format']);
+            exit;
+        }
+
+        // Parse and validate URL components
+        $parsedUrl = parse_url($validationUrl);
+
+        // Enforce HTTPS scheme
+        if (!isset($parsedUrl['scheme']) || $parsedUrl['scheme'] !== 'https') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Validation URL must use HTTPS']);
+            exit;
+        }
+
+        // Allowlist Apple's official validation domains
+        $allowedHosts = [
+            'apple-pay-gateway.apple.com',          // Global
+            'cn-apple-pay-gateway.apple.com',       // China
+            'apple-pay-gateway-cert.apple.com',     // Sandbox/cert
+        ];
+
+        $host = strtolower($parsedUrl['host'] ?? '');
+        if (!in_array($host, $allowedHosts, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Validation URL must be from Apple Pay Gateway']);
+            exit;
+        }
+
+        // Reject private/loopback IP addresses (defense in depth)
+        $ip = gethostbyname($host);
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid validation URL']);
+            exit;
+        }
+
         $applePayGateway = new ApplePay();
 
         if (!$applePayGateway->appleMerchantId

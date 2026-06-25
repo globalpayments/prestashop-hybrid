@@ -3,7 +3,10 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.1.3 (06/18/26)
+## Latest Version ## v2.1.4 (06/25/26)
+- Added fix for submission Rejection – Smarty Template Compliance Issue
+
+## v2.1.3 (06/18/26)
 - Added fix for PrestaShop Security Certification Issue
 - Added Refund Eligibility Tooltip for Asynchronous Payments
 - Added fix for Display issues when using HPP with Hummingbird theme on Prestashop 9.1

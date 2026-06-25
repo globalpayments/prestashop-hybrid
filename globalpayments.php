@@ -111,7 +111,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '2.1.3';
+        $this->version = '2.1.4';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
@@ -1130,27 +1130,21 @@ class GlobalPayments extends PaymentModule
      */
     private function getInstallmentsHtml(array $installmentData): string
     {
-        $installments = htmlspecialchars((string)($installmentData['installments'] ?? 'N/A'));
-        $financedAmount = htmlspecialchars((string)($installmentData['financed_amount'] ?? 'N/A'));
-        $financeFee = htmlspecialchars((string)($installmentData['finance_fee'] ?? 'N/A'));
-        $monthlyAmount = htmlspecialchars((string)($installmentData['monthly_amount'] ?? 'N/A'));
-        $currency = htmlspecialchars((string)($installmentData['currency'] ?? ''));
+        $installments = (string)($installmentData['installments'] ?? 'N/A');
+        $financedAmount = (string)($installmentData['financed_amount'] ?? 'N/A');
+        $financeFee = (string)($installmentData['finance_fee'] ?? 'N/A');
+        $monthlyAmount = (string)($installmentData['monthly_amount'] ?? 'N/A');
+        $currency = (string)($installmentData['currency'] ?? '');
         $currencyDisplay = $currency ? ' ' . $currency : '';
 
-        return <<<HTML
-        <div class="v1shadow v1wrapper-container" style="box-shadow: 0 20px 30px 0 rgba(0, 0, 0, 0.1); background: #ffffff; background-color: #ffffff; margin: 0px auto; border-radius: 4px; max-width: 604px">
-            <div style="font-family: Open sans,arial,sans-serif; font-size: 14px; line-height: 25px; text-align: left; color: #363A41;margin: 10px;padding: 10px;">
-                <span style="font-weight:700;font-size:15px;">Installment Payment Details</span>
-                <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:8px;font-family:Open sans,arial,sans-serif;font-size:14px;color:#363A41;" width="100%">
-                    <tbody>
-                        <tr><td style="padding:3px 0;"><span style="font-weight:700;">Installments:</span> {$installments}</td></tr>
-                        <tr><td style="padding:3px 0;"><span style="font-weight:700;">Total Financed Amount:</span> {$financedAmount}{$currencyDisplay}</td></tr>
-                        <tr><td style="padding:3px 0;"><span style="font-weight:700;">Finance Fee:</span> {$financeFee}{$currencyDisplay}</td></tr>
-                        <tr><td style="padding:3px 0;"><span style="font-weight:700;">Monthly Amount:</span> {$monthlyAmount}{$currencyDisplay}</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-HTML;
+        $this->context->smarty->assign([
+            'installments' => $installments,
+            'financedAmount' => $financedAmount,
+            'financeFee' => $financeFee,
+            'monthlyAmount' => $monthlyAmount,
+            'currencyDisplay' => $currencyDisplay,
+        ]);
+
+        return $this->display(__FILE__, 'installment_email_section.tpl');
     }
 }

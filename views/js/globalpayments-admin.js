@@ -703,6 +703,8 @@
             });
             toggleHppSetting('input[type="radio"][id*="hpp"]', hppSelected);
             toggleHppSetting(`input[name="${this.id}_dcc"]`, hppSelected);
+            toggleHppSetting('input[type="hidden"][id*="hpp"]', hppSelected);
+            toggleHppSetting('input[type="text"][id*="hpp"]', hppSelected);
             toggleHppSetting(`input[type="radio"][id*="Blik"]:not([id*="hpp"]),
                  input[type="radio"][id*="OpenBanking"]:not([id*="hpp"])`, !hppSelected);
             
@@ -718,6 +720,14 @@
                     installmentsRow.style.display = shouldShow ? 'block' : 'none';
                 }
             }
+
+            document.querySelectorAll('select[id*="hpp"]').forEach(function(select) {
+                let parentGroup = select.closest('.form-group');
+
+                if (parentGroup) {
+                    parentGroup.style.display = (hppSelected ? "block": "none");
+                }
+            });
         },
 
         /**

@@ -3,8 +3,15 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.1.4 (06/25/26)
+## Latest Version ## v2.1.5 (07/23/26)
+- Improvements to AVS/CVV decline customer-facing error message
+- Added Translations for AVS and CVV Rejection Messages
+- Fixed duplicate entries of payment in admin order
+- Added Visa installments configuration options
+
+## v2.1.4 (06/25/26)
 - Added fix for submission Rejection – Smarty Template Compliance Issue
+- Shopping cart now properly resets after HPP payment
 
 ## v2.1.3 (06/18/26)
 - Added fix for PrestaShop Security Certification Issue

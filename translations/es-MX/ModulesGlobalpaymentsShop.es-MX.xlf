@@ -168,6 +168,21 @@
         <target>Aún no has registrado ninguna tarjeta.</target>
         <note>Line: </note>
       </trans-unit>
+      <trans-unit id="f3995f59d029ed369c745a88cf553f14">
+        <source>Transaction declined due to billing address and CVV verification failure. Please check your billing address and card details, then try again.</source>
+        <target>La transacción fue rechazada debido a un fallo en la verificación de la dirección de facturación y del código CVV. Por favor, verifique su dirección de facturación y los datos de su tarjeta, y vuelva a intentarlo.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b21937ebfeb7942751075e0e081913b1">
+        <source>Transaction declined due to billing address verification failure. Please check your billing address and card details, then try again.</source>
+        <target>La transacción fue rechazada debido a un fallo en la verificación de la dirección de facturación. Por favor, verifique su dirección de facturación y los datos de su tarjeta, y vuelva a intentarlo.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="7dfec5bf791b513fd734f20b5bfeaac7">
+        <source>Transaction declined due to CVV verification failure. Please check your billing address and card details, then try again.</source>
+        <target>La transacción fue rechazada debido a un fallo en la verificación del código CVV. Por favor, verifique su dirección de facturación y los datos de su tarjeta, y vuelva a intentarlo.</target>
+        <note>Line: </note>
+      </trans-unit>
       <trans-unit id="a8f3e9c4b5d6a7e8f9c0d1e2f3a4b5c6">
         <source>For card-based installment payment options, please enter your card information below.</source>
         <target>Para opciones de pago a Meses sin Intereses por favor ingresa abajo la información de la tarjeta.</target>

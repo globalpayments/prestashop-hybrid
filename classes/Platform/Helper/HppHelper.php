@@ -48,6 +48,11 @@ class HppHelper
     public function completePayment(\Order $order, string $transactionId, array $gatewayData, bool $addTransactionHistory = true): void
     {
         try {
+            // Move order to paid first so payment rows are finalized before we attach gateway metadata.
+            if (!$this->isOrderAlreadyPaid($order)) {
+                $this->updateOrderToPaid($order);
+            }
+
             // Update order payment with transaction ID
             $this->updateOrderPayment($order, $transactionId, $gatewayData);
 
@@ -64,10 +69,6 @@ class HppHelper
             // Store payment method ID in OrderAdditionalInfo (required for refunds)
             $this->storePaymentMethodId($order);
 
-            // Update order status to payment accepted
-            if (!$this->isOrderAlreadyPaid($order)) {
-                $this->updateOrderToPaid($order);
-            }
         } catch (\Exception $e) {
             $this->logError('Exception during payment completion', [
                 'order_id' => $order->id,
@@ -105,15 +106,36 @@ class HppHelper
             return;
         }
 
-        $orderPayment = $orderPayments[0];
-        $orderPayment->transaction_id = $transactionId;
+        $targetPayment = null;
+
+        foreach ($orderPayments as $payment) {
+            if (empty($payment->transaction_id)) {
+                $targetPayment = $payment;
+                break;
+            }
+        }
+
+        if (!$targetPayment) {
+            $orderPayments = array_values($orderPayments);
+            $targetPayment = end($orderPayments);
+        }
+
+        if (!$targetPayment) {
+            $this->logWarning('Unable to determine target order payment for transaction update', [
+                'order_id' => $order->id,
+                'order_reference' => $order->reference,
+            ]);
+            return;
+        }
+
+        $targetPayment->transaction_id = $transactionId;
 
         // Update payment method if card data available
         if (isset($gatewayData['payment_method']['card'])) {
-            $orderPayment->payment_method = $this->formatPaymentMethod($gatewayData['payment_method']['card']);
+            $targetPayment->payment_method = $this->formatPaymentMethod($gatewayData['payment_method']['card']);
         }
 
-        $orderPayment->save();
+        $targetPayment->save();
     }
 
     /**
@@ -236,7 +258,7 @@ class HppHelper
 
         $history = new \OrderHistory();
         $history->id_order = (int)$order->id;
-        $history->changeIdOrderState($newState, $order);
+        $history->changeIdOrderState($newState, $order, true);
         $history->addWithemail(true);
     }
 

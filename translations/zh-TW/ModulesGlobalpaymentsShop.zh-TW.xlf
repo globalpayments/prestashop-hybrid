@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file original="admin315ntjt5b5zndtxd6a3" source-language="zh-TW" target-language="zh-CN" datatype="plaintext">
+  <file original="admin315ntjt5b5zndtxd6a3" source-language="zh-TW" target-language="zh-TW" datatype="plaintext">
     <body>
       <trans-unit id="5c3d49069849e0467562e52e3f9ab8a5">
         <source>Please accept the terms of service</source>
@@ -166,6 +166,21 @@
       <trans-unit id="eb0b8a8579d442a4340ff328116ba83e">
         <source>You haven't registered a card yet.</source>
         <target>您尚未註冊任何卡片。</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="f3995f59d029ed369c745a88cf553f14">
+        <source>Transaction declined due to billing address and CVV verification failure. Please check your billing address and card details, then try again.</source>
+        <target>由於帳單地址和 CVV 驗證失敗，交易遭到拒絕。請檢查您的帳單地址和卡片資訊，然後再試一次。</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b21937ebfeb7942751075e0e081913b1">
+        <source>Transaction declined due to billing address verification failure. Please check your billing address and card details, then try again.</source>
+        <target>由於帳單地址驗證失敗，交易遭到拒絕。請檢查您的帳單地址和卡片資訊，然後再試一次。</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="7dfec5bf791b513fd734f20b5bfeaac7">
+        <source>Transaction declined due to CVV verification failure. Please check your billing address and card details, then try again.</source>
+        <target>由於 CVV 驗證失敗，交易遭到拒絕。請檢查您的帳單地址和卡片資訊，然後再試一次。</target>
         <note>Line: </note>
       </trans-unit>
       <trans-unit id="card-based_insatllments">

@@ -168,6 +168,21 @@
         <target>您尚未注册任何卡片。</target>
         <note>Line: </note>
       </trans-unit>
+      <trans-unit id="f3995f59d029ed369c745a88cf553f14">
+        <source>Transaction declined due to billing address and CVV verification failure. Please check your billing address and card details, then try again.</source>
+        <target>由于账单地址和 CVV 验证失败，交易被拒绝。请检查您的账单地址和银行卡信息，然后重试。</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b21937ebfeb7942751075e0e081913b1">
+        <source>Transaction declined due to billing address verification failure. Please check your billing address and card details, then try again.</source>
+        <target>由于账单地址验证失败，交易被拒绝。请检查您的账单地址和银行卡信息，然后重试。</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="7dfec5bf791b513fd734f20b5bfeaac7">
+        <source>Transaction declined due to CVV verification failure. Please check your billing address and card details, then try again.</source>
+        <target>由于 CVV 验证失败，交易被拒绝。请检查您的账单地址和银行卡信息，然后重试。</target>
+        <note>Line: </note>
+      </trans-unit>
       <trans-unit id="card-based_insatllments">
         <source>For card-based installment payment options, please enter your card information below.</source>
         <target>对于基于银行卡的分期付款选项，请在下方输入您的卡片信息。</target>

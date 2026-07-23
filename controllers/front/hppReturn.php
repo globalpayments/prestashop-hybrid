@@ -35,7 +35,7 @@ if (!defined('_PS_VERSION_')) {
  */
 class GlobalPaymentsHppReturnModuleFrontController extends AbstractUrl
 {
-    
+
     /**
      * @var HppHelper HPP business logic helper
      */
@@ -241,7 +241,7 @@ class GlobalPaymentsHppReturnModuleFrontController extends AbstractUrl
                 'key' => $order->secure_key,
             ]
         );
-        
+
         $successUrl = $this->encodeAccentedParts($successUrl);
 
         echo $this->generateHtmlPage(
@@ -269,7 +269,7 @@ class GlobalPaymentsHppReturnModuleFrontController extends AbstractUrl
     {
         $cartUrl = $this->context->link->getPageLink('order', true);
         $cartUrl = $this->encodeAccentedParts($cartUrl);
-       
+
         echo $this->generateHtmlPage(
             'Payment Error',
             '&#x2716;',
@@ -510,7 +510,7 @@ class GlobalPaymentsHppReturnModuleFrontController extends AbstractUrl
         try {
             // Get logo from shop configuration
             $logo = \Configuration::get('PS_LOGO');
-            
+
             if ($logo) {
                 // Build full URL to logo
                 $imgDir = $this->context->link->getBaseLink() . 'img/';
@@ -529,7 +529,7 @@ class GlobalPaymentsHppReturnModuleFrontController extends AbstractUrl
 
         return null;
     }
-    
+
     /**
      * Encode only accented characters in a PrestaShop URL
      *

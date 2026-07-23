@@ -163,15 +163,17 @@ class InitiatePaymentRequest extends AbstractRequest
             $hppBuilder->withDigitalWallets($enabledWallets);
         }
 
-        if (\Configuration::get('globalpayments_ucp_enableInstallments')) {
-            $maxMonths = \Configuration::get('globalpayments_ucp_installmentsMaxMonths');
+        $maxMonths = (\Configuration::get('globalpayments_ucp_installmentsMaxMonths') === '0')
+            ? '12'
+            : \Configuration::get('globalpayments_ucp_installmentsMaxMonths');
 
-            $fundingMode = (\Configuration::get('globalpayments_ucp_installmentsFundingMode') === 'select')
-                ? InstallmentsFundingMode::ANY
-                : \Configuration::get('globalpayments_ucp_installmentsFundingMode');
+        $fundingMode = (\Configuration::get('globalpayments_ucp_installmentsFundingMode') === 'select')
+            ? InstallmentsFundingMode::ANY
+            : \Configuration::get('globalpayments_ucp_installmentsFundingMode');
 
-            $hppBuilder->withInstallments($fundingMode, $maxMonths);
-        }
+        $maxInstallmentValue = \Configuration::get('globalpayments_ucp_hppInstallmentsMaxValue') ?: null;
+
+        $hppBuilder->withInstallments($fundingMode, $maxMonths, $maxInstallmentValue);
 
         // Add alternative payment methods
         $enabledAlternativePayments = $this->getAlternativePaymentMethods();

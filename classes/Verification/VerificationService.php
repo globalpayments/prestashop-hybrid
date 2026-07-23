@@ -249,6 +249,44 @@ class VerificationService
     public function getCustomerErrorMessage(VerificationResult $result): string
     {
         if ($result->shouldDecline()) {
+            $declineReasons = $result->getDeclineReasons();
+
+            /**
+             * The purpose of this section is to provide a more descriptive customer-facing decline message when
+             * there is an AVS and/or CVV decline. These strings are now translation-driven and should be defined
+             * for every supported locale.
+             */
+            $isAvsCvvDeclineOnly = empty(array_diff($declineReasons, ['AVS', 'CVV']));
+
+            if ($isAvsCvvDeclineOnly) {
+                $hasAvsFailure = in_array('AVS', $declineReasons, true);
+                $hasCvvFailure = in_array('CVV', $declineReasons, true);
+
+                if ($hasAvsFailure && $hasCvvFailure) {
+                    return $this->translator->trans(
+                        'Transaction declined due to billing address and CVV verification failure. Please check your billing address and card details, then try again.',
+                        [],
+                        'Modules.Globalpayments.Shop'
+                    );
+                }
+
+                if ($hasAvsFailure) {
+                    return $this->translator->trans(
+                        'Transaction declined due to billing address verification failure. Please check your billing address and card details, then try again.',
+                        [],
+                        'Modules.Globalpayments.Shop'
+                    );
+                }
+
+                if ($hasCvvFailure) {
+                    return $this->translator->trans(
+                        'Transaction declined due to CVV verification failure. Please check your billing address and card details, then try again.',
+                        [],
+                        'Modules.Globalpayments.Shop'
+                    );
+                }
+            }
+
             return $this->translator->trans(
                 'Your card could not be verified. Please check your billing address and card details, then try again.',
                 [],

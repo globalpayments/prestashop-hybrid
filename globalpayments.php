@@ -111,7 +111,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '2.1.4';
+        $this->version = '2.1.5';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
@@ -993,7 +993,6 @@ class GlobalPayments extends PaymentModule
             }
         }
 
-
         if ($cookie->__isset('globalpayments_payment_error')) {
             $paymentError = $cookie->globalpayments_payment_error;
             unset($cookie->globalpayments_payment_error);
@@ -1005,6 +1004,9 @@ class GlobalPayments extends PaymentModule
         }
 
         $this->context->smarty->assign($templateVars);
+
+        $checkoutHelper = new CheckoutHelper($this, $this->context->cart);
+        $checkoutHelper->clearCart();
 
         return $this->display(__FILE__, 'payment_return.tpl');
     }

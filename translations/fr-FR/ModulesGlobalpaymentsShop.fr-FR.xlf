@@ -168,6 +168,21 @@
         <target>Vous n'avez pas encore enregistré de carte.</target>
         <note>Line: </note>
       </trans-unit>
+      <trans-unit id="f3995f59d029ed369c745a88cf553f14">
+        <source>Transaction declined due to billing address and CVV verification failure. Please check your billing address and card details, then try again.</source>
+        <target>Transaction refusée en raison de l’échec de la vérification de l’adresse de facturation et du code CVV. Veuillez vérifier votre adresse de facturation et les informations de votre carte, puis réessayer.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="b21937ebfeb7942751075e0e081913b1">
+        <source>Transaction declined due to billing address verification failure. Please check your billing address and card details, then try again.</source>
+        <target>Transaction refusée en raison de l’échec de la vérification de l’adresse de facturation. Veuillez vérifier votre adresse de facturation et les informations de votre carte, puis réessayer.</target>
+        <note>Line: </note>
+      </trans-unit>
+      <trans-unit id="7dfec5bf791b513fd734f20b5bfeaac7">
+        <source>Transaction declined due to CVV verification failure. Please check your billing address and card details, then try again.</source>
+        <target>Transaction refusée en raison de l’échec de la vérification du code CVV. Veuillez vérifier votre adresse de facturation et les informations de votre carte, puis réessayer.</target>
+        <note>Line: </note>
+      </trans-unit>
     </body>
   </file>
 </xliff>

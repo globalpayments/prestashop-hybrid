@@ -518,11 +518,21 @@ class GpApiGateway extends AbstractGateway
                 'type' => 'hidden',
                 'default' => 0,
             ],
-            $this->id . '_hppInstallmentsMaxMonths' => [
-                'title' => $this->translator->trans('HPP: Max number of months for installments', [], 'Modules.Globalpayments.Admin'),
+            $this->id . '_hppVisaInstallments' => [
+                'title' => $this->translator->trans('HPP: Visa Installments', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'hidden',
+                'description' => $this->translator->trans(
+                    'Note: Visa Installments is an account‑level feature. This payment option will only display during checkout if it has been enabled on your Global Payments account.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => '',
+            ],
+                        $this->id . '_hppInstallmentsMaxMonths' => [
+                'title' => $this->translator->trans('HPP: Max number of months for VISA installments', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'select',
                 'description' => $this->translator->trans(
-                    'Set the maximum number of months for installment payments (for use in HPP mode only)',
+                    'Set the maximum number of months for VISA installment payments (for use in HPP mode only)',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -538,15 +548,25 @@ class GpApiGateway extends AbstractGateway
                 ],
             ],
             $this->id . '_hppInstallmentsFundingMode' => [
-                'title' => $this->translator->trans('HPP: Installments Funding Mode', [], 'Modules.Globalpayments.Admin'),
+                'title' => $this->translator->trans('HPP: VISA Installments Funding Mode', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'select',
                 'description' => $this->translator->trans(
-                    'Set the funding mode for installment payments (for use in HPP mode only, default is "Any")',
+                    'Set the funding mode for VISA installment payments (for use in HPP mode only, default is "Any")',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),
                 'default' => 'select',
                 'options' => $this->fetchInstallmentsFundingModes(),
+            ],
+            $this->id . '_hppInstallmentsMaxValue' => [
+                'title' => $this->translator->trans('HPP: VISA Installments Max Value', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'text',
+                'description' => $this->translator->trans(
+                    'Set the maximum value for VISA installment payments (for use in HPP mode only, default is "1000")',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => '1000',
             ],
         ];
     }

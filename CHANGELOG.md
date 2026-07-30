@@ -3,7 +3,13 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.1.5 (07/23/26)
+## Latest Version ## v2.2.0 (07/30/26)
+- Added Support for Visa Installments Payment Plans
+- Fixed HPP checkout ignoring "Authorize" setting
+- Fixed HPP visa installments error for non-UK&I merchants
+- Fixed intermitant bug related to checkout for Javascript selectors
+ 
+## v2.1.5 (07/23/26)
 - Improvements to AVS/CVV decline customer-facing error message
 - Added Translations for AVS and CVV Rejection Messages
 - Fixed duplicate entries of payment in admin order

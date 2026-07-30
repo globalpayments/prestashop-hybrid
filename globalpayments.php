@@ -111,7 +111,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '2.1.5';
+        $this->version = '2.2.0';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
@@ -527,6 +527,7 @@ class GlobalPayments extends PaymentModule
             'globalpayments_admin_params' => [
                 'credentialsCheckUrl' => $this->configForm->getCredentialsCheckUrl(),
                 'defaultCurrency' => $this->context->currency->iso_code ?? 'USD',
+                'defaultCountry' => (new \Country((int) \Configuration::get('PS_COUNTRY_DEFAULT')))->iso_code ?? '',
                 'messages' => [
                     'appId' => $this->getTranslator()->trans(
                         'Please enter an App ID',

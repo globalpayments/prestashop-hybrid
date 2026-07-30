@@ -186,6 +186,13 @@ class GpApiGateway extends AbstractGateway
     public $enableInstallments;
 
     /**
+     * Enable Visa Installment Plans
+     *
+     * @var bool
+     */
+    public $enableVisaInstallments;
+
+    /**
      * GpApiGateway constructor.
      */
     public function __construct()
@@ -202,6 +209,9 @@ class GpApiGateway extends AbstractGateway
 
     public function getFrontendGatewayOptions()
     {
+        $country = new \Country((int) \Configuration::get('PS_COUNTRY_DEFAULT'));
+        $currency = new \Currency((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+        
          return [
             'apiVersion' => GpApiConnector::GP_API_VERSION,
             'accessToken' => $this->getAccessToken(),
@@ -210,6 +220,10 @@ class GpApiGateway extends AbstractGateway
             'enableOpenBanking' => $this->enableOpenBanking,
             'dataResidency' => (\Configuration::get($this->id . '_transactionRegion') == 'europe') ? 'EU' : 'NONE',
             'enableInstallments' => $this->enableInstallments,
+            'enableVisaInstallments' => $this->enableVisaInstallments,
+            'visaInstallmentsFundingMode' => \Configuration::get($this->id . '_visaInstallmentsFundingMode') ?: 'ANY',
+            'visaInstallmentsMaxTimeUnitNumber' => \Configuration::get($this->id . '_visaInstallmentsMaxTimeUnitNumber') ?: '',
+            'visaInstallmentsMaxAmount' => \Configuration::get($this->id . '_visaInstallmentsMaxAmount') ?: '',
             'installmentsAccountName' => $this->getCredentialSetting('accountName'),
             'env' => $this->isProduction ? parent::ENVIRONMENT_PRODUCTION : parent::ENVIRONMENT_SANDBOX,
             'fieldValidation' => [
@@ -236,6 +250,8 @@ class GpApiGateway extends AbstractGateway
             'requireCardHolderName' => true,
             'integrationMethod' => $this->integrationType,
             'hppInitiatePaymentUrl' => $this->getValidNotificationUrl('initiateHppPayment'),
+            'country' => $country->iso_code,
+            'currency' => $currency->iso_code,
         ];
     }
 
@@ -260,6 +276,7 @@ class GpApiGateway extends AbstractGateway
             'challengeNotificationUrl' => $this->getValidNotificationUrl('challengeNotification'),
             'merchantContactUrl' => $this->merchantContactUrl,
             'enableInstallments' => $this->enableInstallments,
+            'enableVisaInstallments' => $this->enableVisaInstallments,
             'dynamicHeaders' => [
                 'x-gp-platform' => 'prestashop;version=' . _PS_VERSION_,
                 'x-gp-extension' => 'globalpayments-prestashop;version='
@@ -279,8 +296,19 @@ class GpApiGateway extends AbstractGateway
             strtoupper((string) $defaultCountry->iso_code) === 'MX'
             && strtoupper((string) $defaultCurrency->iso_code) === 'MXN'
         );
+        $isVisaInstallmentsEligible = (
+            (strtoupper((string) $defaultCountry->iso_code) === 'GB'
+                && strtoupper((string) $defaultCurrency->iso_code) === 'GBP')
+            || (strtoupper((string) $defaultCountry->iso_code) === 'CA'
+                && strtoupper((string) $defaultCurrency->iso_code) === 'CAD')
+        );
 
-        return [
+        $integrationType = \Configuration::get($this->id . '_integrationType');
+        $isDropInUI = ($integrationType === IntegrationType::DROP_IN_UI);
+        $visaInstallmentsValue = \Configuration::get($this->id . '_enableVisaInstallments');
+        $isVisaInstallmentsEnabled = ($visaInstallmentsValue === '1' || $visaInstallmentsValue === 1 || $visaInstallmentsValue === true);
+
+        $fields = [
             $this->id . '_isProduction' => [
                 'title' => $this->translator->trans('Live Mode', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'switch',
@@ -505,19 +533,6 @@ class GpApiGateway extends AbstractGateway
                 ),
                 'default' => 0,
             ],
-            $this->id . '_enableInstallments' => $isMxInstallmentsEligible ? [
-                'title' => $this->translator->trans('Enable Installments', [], 'Modules.Globalpayments.Admin'),
-                'type' => 'switch',
-                'description' => $this->translator->trans(
-                    'Enable installment payment option for customers',
-                    [],
-                    'Modules.Globalpayments.Admin'
-                ),
-                'default' => 0,
-            ] : [
-                'type' => 'hidden',
-                'default' => 0,
-            ],
             $this->id . '_hppVisaInstallments' => [
                 'title' => $this->translator->trans('HPP: Visa Installments', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'hidden',
@@ -569,6 +584,69 @@ class GpApiGateway extends AbstractGateway
                 'default' => '1000',
             ],
         ];
+
+        // Conditionally add MX Installments field (only for Mexico with MXN currency)
+        if ($isMxInstallmentsEligible) {
+            $fields[$this->id . '_enableInstallments'] = [
+                'title' => $this->translator->trans('Enable Installments', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable installment payment option for customers',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ];
+        }
+
+        // Conditionally add Visa Installments fields (only for UK/GBP or Canada/CAD)
+        if ($isVisaInstallmentsEligible) {
+            $fields[$this->id . '_enableVisaInstallments'] = [
+                'title' => $this->translator->trans('Enable Visa Installments', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable Visa installment payment option for customers',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ];
+            $fields[$this->id . '_visaInstallmentsFundingMode'] = [
+                'title' => $this->translator->trans('Visa Installments Funding Mode', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'select',
+                'description' => $this->translator->trans(
+                    'Set the funding mode for Visa installment payments (for use in Drop-in UI mode only, default is "Any")',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 'select',
+                'options' => $this->fetchInstallmentsFundingModes(),
+            ];
+            $fields[$this->id . '_visaInstallmentsMaxTimeUnitNumber'] = [
+                'title' => $this->translator->trans('Visa Installments Max Time Unit Number', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'number',
+                'inputType' => 'number',
+                'description' => $this->translator->trans(
+                    'Set the maximum time unit number for Visa installment payments',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => '',
+            ];
+            $fields[$this->id . '_visaInstallmentsMaxAmount'] = [
+                'title' => $this->translator->trans('Visa Installments Max Amount', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'number',
+                'inputType' => 'number',
+                'description' => $this->translator->trans(
+                    'Set the maximum amount for Visa installment payments',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => '',
+            ];
+        }
+
+        return $fields;
     }
 
     public function securePaymentFieldsConfiguration()

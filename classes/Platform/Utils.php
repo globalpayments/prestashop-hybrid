@@ -68,7 +68,7 @@ class Utils
      */
     public static function getJsLibVersion()
     {
-        return '4.1.19';
+        return '5.0.1';
     }
 
     /**
@@ -160,5 +160,32 @@ class Utils
         if ($signature !== $calculatedSignature) {
             throw new LogicException('Invalid request signature.');
         };
+    }
+
+    /**
+     * Check if Visa installments is supported for the given country and currency.
+     * Visa installments are enabled for GB/GBP and CA/CAD.
+     *
+     * @param string|null $country
+     * @param string|null $currency
+     *
+     * @return bool
+     */
+    public static function isVisaInstallmentsSupported(?string $country, ?string $currency): bool
+    {
+        $supportedCombinations = [
+            'GB' => 'GBP',
+            'CA' => 'CAD',
+        ];
+
+        if (!is_string($country) || !is_string($currency)) {
+            return false;
+        }
+
+        $countryUpper = strtoupper($country);
+        $currencyUpper = strtoupper($currency);
+
+        return isset($supportedCombinations[$countryUpper])
+            && $supportedCombinations[$countryUpper] === $currencyUpper;
     }
 }

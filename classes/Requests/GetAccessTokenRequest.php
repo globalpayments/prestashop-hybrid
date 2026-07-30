@@ -52,6 +52,18 @@ class GetAccessTokenRequest extends AbstractRequest
                 );
             }
 
+            // Add Visa installments-related permissions if Visa installments is enabled
+            if (
+                \GlobalPayments\PaymentGatewayProvider\Platform\Utils::isVisaInstallmentsSupported($country, $currency)
+                && !empty($config['enableVisaInstallments'])
+                && $config['enableVisaInstallments'] === true
+            ) {
+            $permissions =  array_merge(
+                    $permissions,
+                    ['PMT_POST_Create', 'PMT_POST_Create_Single', 'INS_POST_Query']
+                );
+            }    
+
             if (
                 !empty($config['dcc'])
                 && $config['dcc'] === 1

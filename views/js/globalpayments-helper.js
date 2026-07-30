@@ -274,7 +274,7 @@
          * @returns string
          */
         getPaymentOptionId: function(id) {
-            return $('input[data-module-name="' + id + '"]:checked').attr('id');
+            return $('input[data-module-name*="' + id + '"]:checked').attr('id');
         },
 
         /**
@@ -322,8 +322,11 @@
          * @returns
          */
         toggleSubmitButtons: function () {
-            var paymentMethodSelected = $('.payment-options input.ps-shown-by-js:checked, .payment-option__input.form-check-input.ps-shown-by-js:checked').attr('data-module-name');
-            // var paymentMethodSelected = $('.payment-options input.ps-shown-by-js:checked').attr('data-module-name');
+            var paymentMethodSelected = $('input.ps-shown-by-js:checked, .payment-option__input.form-check-input.ps-shown-by-js:checked')
+            .attr('data-module-name');
+            if(paymentMethodSelected && paymentMethodSelected.includes("-")){
+                paymentMethodSelected = paymentMethodSelected.replace(/-.*/, '');                    
+            }
             var isPaymentMethodSelected = $(this.getPaymentMethodRadioSelector(paymentMethodSelected)).first().is(':checked');
             $('.globalpayments.card-submit').hide();
 
@@ -394,7 +397,7 @@
          * @returns {string}
          */
         getPaymentMethodRadioSelector: function ( id ) {
-            return '.payment-options input.ps-shown-by-js[data-module-name="' + id + '"] , .payment-option__input.form-check-input[data-module-name="'+id+'"]';
+            return '.payment-options input.ps-shown-by-js[data-module-name*="' + id + '"] , .payment-option__input.form-check-input[data-module-name*="'+id+'"]';
         },
 
         validateTermsAndConditions: function(id) {

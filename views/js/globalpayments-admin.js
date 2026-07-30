@@ -721,6 +721,106 @@
                 }
             }
 
+            // Toggle Visa Installments and Funding Mode visibility
+            this.toggleVisaInstallmentsSettings(hppSelected);
+        },
+
+        /**
+         * Toggle Visa Installments and Funding Mode visibility
+         * @param {boolean} hppSelected - Whether HPP is selected
+         */
+        toggleVisaInstallmentsSettings: function(hppSelected) {
+            let self = this;
+            let isVisaEligible = this.isVisaInstallmentsEligible();
+
+            // Toggle Enable Visa Installments field visibility
+            let visaInstallmentsField = document.querySelector('input[type="radio"][id*="enableVisaInstallments"]');
+            if (visaInstallmentsField) {
+                let visaInstallmentsRow = visaInstallmentsField.closest('.form-group');
+                if (visaInstallmentsRow) {
+                    // Show only if: Drop-in UI is selected AND eligible (UK/GBP or CA/CAD)
+                    let shouldShow = !hppSelected && isVisaEligible;
+                    visaInstallmentsRow.style.display = shouldShow ? 'block' : 'none';
+                }
+            }
+
+            // Toggle Visa Installments Funding Mode visibility
+            this.toggleVisaInstallmentsFundingMode(hppSelected);
+
+            // Attach event handler for Visa Installments switch if not already attached
+            let visaSwitch = document.querySelector('input[name="' + this.id + '_enableVisaInstallments"]');
+            if (visaSwitch && !visaSwitch.hasAttribute('data-funding-handler')) {
+                visaSwitch.setAttribute('data-funding-handler', 'true');
+                let gatewayId = this.id;
+                // Use direct binding on all matching radio buttons for immediate response
+                $('input[name="' + gatewayId + '_enableVisaInstallments"]').on('change', function() {
+                    self.toggleVisaInstallmentsFundingMode(self.isHppEnabled());
+                });
+                // Also use click event as fallback for better responsiveness
+                $('input[name="' + gatewayId + '_enableVisaInstallments"]').on('click', function() {
+                    // Small delay to ensure the checked state is updated
+                    setTimeout(function() {
+                        self.toggleVisaInstallmentsFundingMode(self.isHppEnabled());
+                    }, 10);
+                });
+            }
+        },
+
+        /**
+         * Toggle Visa Installments Funding Mode visibility based on switch state
+         * @param {boolean} hppSelected - Whether HPP is selected
+         */
+        toggleVisaInstallmentsFundingMode: function(hppSelected) {
+            let isVisaEligible = this.isVisaInstallmentsEligible();
+
+            // Get the Visa Installments switch value
+            let visaEnabled = false;
+            let visaInput = document.querySelector('input[name="' + this.id + '_enableVisaInstallments"]:checked');
+            if (visaInput) {
+                visaEnabled = visaInput.value === '1';
+            }
+
+            // Show only if: Drop-in UI AND eligible AND Visa Installments enabled
+            let shouldShow = !hppSelected && isVisaEligible && visaEnabled;
+            // Find the funding mode field
+            let fundingModeField = document.querySelector('select[name="' + this.id + '_visaInstallmentsFundingMode"]');
+            if (fundingModeField) {
+                let fundingModeRow = fundingModeField.closest('.form-group');
+                if (fundingModeRow) {
+                    fundingModeRow.style.display = shouldShow ? 'block' : 'none';
+                }
+            }
+
+            // Find the max time unit number field
+            let maxTimeUnitField = document.querySelector('input[name="' + this.id + '_visaInstallmentsMaxTimeUnitNumber"]');
+            if (maxTimeUnitField) {
+                let maxTimeUnitRow = maxTimeUnitField.closest('.form-group');
+                if (maxTimeUnitRow) {
+                    maxTimeUnitRow.style.display = shouldShow ? 'block' : 'none';
+                }
+            }
+
+            // Find the max amount field
+            let maxAmountField = document.querySelector('input[name="' + this.id + '_visaInstallmentsMaxAmount"]');
+            if (maxAmountField) {
+                let maxAmountRow = maxAmountField.closest('.form-group');
+                if (maxAmountRow) {
+                    maxAmountRow.style.display = shouldShow ? 'block' : 'none';
+                }
+            }
+        },
+
+        /**
+         * Check if the store is eligible for Visa Installments (UK/GBP or CA/CAD)
+         * @returns {boolean}
+         */
+        isVisaInstallmentsEligible: function() {
+            if (this.adminParams) {
+                let currency = this.adminParams.defaultCurrency || '';
+                let country = this.adminParams.defaultCountry || '';
+                return (country === 'GB' && currency === 'GBP') || (country === 'CA' && currency === 'CAD');
+            }
+            return false;
             document.querySelectorAll('select[id*="hpp"]').forEach(function(select) {
                 let parentGroup = select.closest('.form-group');
 

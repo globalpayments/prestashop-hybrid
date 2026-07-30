@@ -163,29 +163,67 @@ class InitiatePaymentRequest extends AbstractRequest
             $hppBuilder->withDigitalWallets($enabledWallets);
         }
 
-        $maxMonths = (\Configuration::get('globalpayments_ucp_installmentsMaxMonths') === '0')
-            ? '12'
-            : \Configuration::get('globalpayments_ucp_installmentsMaxMonths');
+        if ($this->isHPPInstallmentsEligible()) {
+            $fundingMode = InstallmentsFundingMode::ANY;
+            $maxMonths   = 32;
+            $threshold   = null;
 
-        $fundingMode = (\Configuration::get('globalpayments_ucp_installmentsFundingMode') === 'select')
-            ? InstallmentsFundingMode::ANY
-            : \Configuration::get('globalpayments_ucp_installmentsFundingMode');
+            // Funding mode
+            $planType = \Configuration::get('globalpayments_ucp_hppInstallmentsFundingMode') ?? null;
 
-        $maxInstallmentValue = \Configuration::get('globalpayments_ucp_hppInstallmentsMaxValue') ?: null;
+            if ( !empty( $planType ) && $planType !== 'any' ) {
+                $planType =  strtoupper( $planType );
+                $InstallmentsFundingModeReflection = new \ReflectionClass( InstallmentsFundingMode::class );
+                $InstallmentsFundingModeConsts = $InstallmentsFundingModeReflection->getConstants();
+                
+                if ( isset( $InstallmentsFundingModeConsts[$planType] ) ) {
+                    $fundingMode = $InstallmentsFundingModeConsts[$planType];
+                } else {
+                    $fundingMode = InstallmentsFundingMode::ANY;
+                }
+            }
+            
+            // Max months (only relevant for merchant funded)
+            if (
+                $fundingMode === InstallmentsFundingMode::MERCHANT_FUNDED &&
+                !empty( \Configuration::get('globalpayments_ucp_installmentsMaxMonths') ) ) {
+                $months = ( int ) \Configuration::get('globalpayments_ucp_installmentsMaxMonths');
 
-        $hppBuilder->withInstallments($fundingMode, $maxMonths, $maxInstallmentValue);
+                if ( $months > 0 ) {
+                    $maxMonths = $months;
+                }
+            }
 
+            // Threshold
+            $rawThreshold = \Configuration::get('globalpayments_ucp_hppInstallmentsMaxValue') ?? null;
+
+            if ( $rawThreshold !== null && $rawThreshold !== '0' ) {
+                $thresholdValue = ( int ) $rawThreshold;
+                if ( $thresholdValue > 0 && strlen( ( string ) $rawThreshold) < 16 ) {
+                    $threshold = $thresholdValue;
+                }
+            }
+
+		 	$hppBuilder->withInstallments( $fundingMode, $maxMonths, $threshold );
+        }
+       
         // Add alternative payment methods
         $enabledAlternativePayments = $this->getAlternativePaymentMethods();
         if (!empty($enabledAlternativePayments)) {
             $hppPaymentMethods = array_merge($hppPaymentMethods, $enabledAlternativePayments);
         }
 
+        // Determine capture mode based on payment action setting from admin config
+        $paymentAction = \Configuration::get('globalpayments_ucp_paymentAction');
+        $captureMode = ($paymentAction === TransactionType::AUTHORIZE)
+            ? CaptureMode::LATER
+            : CaptureMode::AUTO;
+
         // Configure transaction settings
         $hppBuilder->withTransactionConfig(
             Channel::CardNotPresent,
             $storeCountryCode,
-            CaptureMode::AUTO,
+            $captureMode,
             $hppPaymentMethods,
             PaymentMethodUsageMode::SINGLE
         );
@@ -478,6 +516,31 @@ class InitiatePaymentRequest extends AbstractRequest
             $severity,
             null,
             'GlobalPayments'
+        );
+    }
+
+    /**
+     * Returns true if shop country and currency is either:
+     * UK and GBP
+     * or
+     * Canada and CAD
+     *
+     * @return bool
+    */
+    private function isHPPInstallmentsEligible(): bool
+    {
+        $countryId = (int) \Configuration::get('PS_COUNTRY_DEFAULT');
+        $currencyId = (int) \Configuration::get('PS_CURRENCY_DEFAULT');
+
+        $country = new \Country($countryId);
+        $currency = new \Currency($currencyId);
+
+        $countryIso = strtoupper($country->iso_code);
+        $currencyIso = strtoupper($currency->iso_code);
+
+        return (
+            ($countryIso === 'GB' && $currencyIso === 'GBP') ||
+            ($countryIso === 'CA' && $currencyIso === 'CAD')
         );
     }
 }

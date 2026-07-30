@@ -127,10 +127,14 @@
 
                 $(helper.getPlaceOrderButtonSelector()).on('click', function ($e) {
                     // Get the currently selected payment method
-                    var paymentMethodSelected = $('.payment-options input.ps-shown-by-js:checked , .payment-option__input.form-check-input.ps-shown-by-js:checked').attr('data-module-name');
+                    var paymentMethodSelected = $('input.ps-shown-by-js:checked , .payment-option__input.form-check-input.ps-shown-by-js:checked')
+                    .attr('data-module-name');
+                      if(paymentMethodSelected && paymentMethodSelected.includes("-")){
+                        paymentMethodSelected = paymentMethodSelected.replace(/-.*/, '');                    
+                    }
 
                     // For HPP mode, use AJAX to prevent raw JSON error display
-                    if (isHppEnabled && paymentMethodSelected === 'globalpayments_ucp') {
+                    if (isHppEnabled && (paymentMethodSelected === 'globalpayments_ucp' || paymentMethodSelected.includes('globalpayments_ucp'))) {
                         $e.preventDefault();
                         $e.stopImmediatePropagation();
 
@@ -295,14 +299,54 @@
             // Add Installments configuration if enabled and using drop-in UI
             let installmentsEnabled = (this.isInstallmentsEnabled() === true) ? true : false;
 
+            let installVisaInstallments = (this.isVisaInstallmentsEnabled() === true) ? true : false;
+
+            
+
             if (installmentsEnabled && gatewayConfig.accessToken) {
                 // Use baseCurrency/baseCountry from gatewayOptions, fallback to MXN/MX
-                var baseCurrency = this.gatewayOptions.baseCurrency || 'MXN';
-                var baseCountry = this.gatewayOptions.baseCountry || 'MX';
+                var baseCurrency = this.gatewayOptions.currency || 'MXN';
+                var baseCountry = this.gatewayOptions.country || 'MX';
 
                 gatewayConfig.installments = {
+                    program: 'LATAM',
                     currency: baseCurrency,
                     country: baseCountry,
+                    allowedCardNetworks: [
+                        GlobalPayments.enums.CardNetwork.Visa
+                    ]
+                };
+
+                if (this.gatewayOptions.installmentsAccountName) {
+                    gatewayConfig.installments.accountName = this.gatewayOptions.installmentsAccountName;
+                }
+            }
+
+            if (installVisaInstallments && gatewayConfig.accessToken) {
+                var baseCurrency = this.gatewayOptions.currency || 'GBP';
+                var baseCountry = this.gatewayOptions.country || 'UK';
+                // Convert GB to UK for API compatibility
+                baseCountry = (baseCountry === 'GB') ? 'UK' : baseCountry;
+                
+                var visaConfig = {
+                    funding_mode: this.gatewayOptions.visaInstallmentsFundingMode || 'ANY'
+                };
+                
+                // Add max_time_unit_number if set
+                if (this.gatewayOptions.visaInstallmentsMaxTimeUnitNumber) {
+                    visaConfig.max_time_unit_number = parseInt(this.gatewayOptions.visaInstallmentsMaxTimeUnitNumber, 10);
+                }
+                
+                // Add max_amount if set
+                if (this.gatewayOptions.visaInstallmentsMaxAmount) {
+                    visaConfig.max_amount = parseFloat(this.gatewayOptions.visaInstallmentsMaxAmount);
+                }
+                
+                gatewayConfig.installments = {
+                    program: 'VIS',
+                    currency: baseCurrency,
+                    country: baseCountry,
+                    config: visaConfig,
                     allowedCardNetworks: [
                         GlobalPayments.enums.CardNetwork.Visa
                     ]
@@ -328,7 +372,7 @@
                 };
 
                 // Add amount for APMs and installments separately to avoid cross-impact
-                if (installmentsEnabled) {
+                if (installmentsEnabled || installVisaInstallments) {
                     var installmentsAmount = this.order.amountDecimal
                         ? this.order.amountDecimal
                         : '0';
@@ -844,6 +888,15 @@
          */
         isInstallmentsEnabled: function () {
             return this.gatewayOptions.enableInstallments;
+        },
+
+        /**
+         * States whether Visa installments is enabled.
+         *
+         * @returns {Boolean}
+         */
+        isVisaInstallmentsEnabled: function () {
+            return this.gatewayOptions.enableVisaInstallments;
         },
 
         /**

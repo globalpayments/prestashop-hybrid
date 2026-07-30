@@ -199,6 +199,13 @@ abstract class AbstractGateway implements GatewayInterface
     public $enableInstallments = false;
 
     /**
+     * States whether the Visa Installments payment method should be enabled
+     *
+     * @var bool
+     */
+    public $enableVisaInstallments = false;
+    
+    /**
      * Check AVS/CVV Result (Yes/No)
      *
      * @var bool
@@ -368,6 +375,32 @@ abstract class AbstractGateway implements GatewayInterface
         $currency = new \Currency((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
 
         return $country->iso_code === 'MX' && $currency->iso_code === 'MXN';
+    }
+
+    /**
+     * Check if the store is configured for Canada with CAD currency
+     *
+     * @return bool
+     */
+    private function isCanadaWithCADCurrency() : bool
+    {
+        $country = new \Country((int) \Configuration::get('PS_COUNTRY_DEFAULT'));
+        $currency = new \Currency((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+
+        return $country->iso_code === 'CA' && $currency->iso_code === 'CAD';
+    }
+
+    /**
+     * Check if the store is configured for UK with GBP currency
+     *
+     * @return bool
+     */
+    private function isUKWithGBPCurrency() : bool
+    {
+        $country = new \Country((int) \Configuration::get('PS_COUNTRY_DEFAULT'));
+        $currency = new \Currency((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+
+        return $country->iso_code === 'GB' && $currency->iso_code === 'GBP';
     }
 
     /**
@@ -1252,6 +1285,7 @@ abstract class AbstractGateway implements GatewayInterface
                 'cardId' => $card->id_globalpayments_token,
                 'id' => $this->id,
                 'enableInstallments' => $this->enableInstallments,
+                'enableVisaInstallments' => $this->enableVisaInstallments,
                 'allowCardSaving' => $this->allowCardSaving,
             ]);
 
@@ -1272,12 +1306,22 @@ abstract class AbstractGateway implements GatewayInterface
                 ->setModuleName($this->id)
                 ->setCallToActionText($paymentText);
 
-            // Add tooltip for installments - only for Drop-in UI, not HPP, and only for Mexico with MXN currency
-            if ($this->enableInstallments 
+            // Add tooltip for installments - only for Drop-in UI, not HPP
+            // For regular installments: Mexico with MXN currency
+            // For Visa installments: Canada with CAD or UK with GBP currency
+                $showInstallmentTooltip = (
+                $this->enableInstallments 
                 && $this->allowCardSaving 
                 && strtolower($this->integrationType) === IntegrationType::DROP_IN_UI
                 && $this->isMexicoWithMXNCurrency()
-            ) {
+            ) || (
+                $this->enableVisaInstallments 
+                && $this->allowCardSaving 
+                && strtolower($this->integrationType) === IntegrationType::DROP_IN_UI
+                && ($this->isCanadaWithCADCurrency() || $this->isUKWithGBPCurrency())
+            );
+
+            if ($showInstallmentTooltip) {
                 $tooltipText = $this->translator->trans(
                     'For card-based installment payment options, please enter your card information below.',
                     [],

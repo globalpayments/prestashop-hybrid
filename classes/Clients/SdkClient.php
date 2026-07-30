@@ -291,9 +291,18 @@ class SdkClient implements ClientInterface
                 $isDropInUi = is_string($integrationMethod)
                     && strtolower($integrationMethod) === IntegrationType::DROP_IN_UI;
 
+                $isVisaInstallmentsSupported = Utils::isVisaInstallmentsSupported(
+                    $config['country'] ?? null,
+                    $currency
+                );
+
                 $installmentsEnabled = !empty($config['enableInstallments'])
                     && $config['enableInstallments']
                     && $isMxnCurrency
+                    && $isDropInUi;
+
+                $visaInstallmentsEnabled = !empty($config['enableVisaInstallments'])
+                    && $isVisaInstallmentsSupported
                     && $isDropInUi;
 
                 // Send stored_credential when: 1) saving new card OR 2) using saved card
@@ -323,6 +332,7 @@ class SdkClient implements ClientInterface
 
                     $this->builderArgs['storedCredential'] = [$storedCredential];
                 }
+
                 
                 // Add installment data if present in token response (regardless of save card)
                 if ($installmentsEnabled && !empty($token->installment)) {
@@ -339,6 +349,45 @@ class SdkClient implements ClientInterface
                     
                     // Only add installment if we have id or reference
                     if (!empty($installmentData->id) || !empty($installmentData->reference)) {
+                        $this->builderArgs['installment'] = [$installmentData];
+                    }
+                }
+
+                // Add visa installment data if present in token response (regardless of save card)
+                if ($visaInstallmentsEnabled && !empty($token->installment)) {
+
+                    $installmentData = new \GlobalPayments\Api\Entities\InstallmentData();
+                       
+                    if (!empty($token->installment->installmentId)) {
+                        $installmentData->id = $token->installment->installmentId;
+                    }
+
+                    if (!empty($token->installment->installmentReference)) {
+                        $installmentData->reference = $token->installment->installmentReference;
+                        $installmentData->program = 'VIS';
+                    }
+                    
+                    $installmentTerms = new \GlobalPayments\Api\Entities\InstallmentTerms();
+                    $languageMapping = [
+                        'en' => 'eng',
+                        'fr' => 'fre',
+                    ];
+                    
+                    if(!empty($token->installment->language)) {
+                        $lang = $token->installment->language ?? 'en';
+                        $installmentTerms->language = $languageMapping[$lang] ?? $lang;    
+                    }
+
+                    if(!empty($token->installment->version)) {
+                        $installmentTerms->version = $token->installment->version;
+                    } 
+                    
+                    if(!empty($token->installment->language) && !empty($token->installment->version)) {
+                        $installmentData->terms = $installmentTerms;
+                    }
+                    
+                    // Only add installment if we have id or reference
+                    if (!empty($installmentData->reference)) {
                         $this->builderArgs['installment'] = [$installmentData];
                     }
                 }

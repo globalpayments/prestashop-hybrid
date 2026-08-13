@@ -66,6 +66,13 @@ class HppHelper
                 $this->addHppInstallmentOrderHistoryMessage($order, $gatewayData['installment']);
             }
 
+            // Check if payment is eRaty and store in OrderAdditionalInfo
+            if (!empty($gatewayData['payment_method']['apm']['provider']) 
+                && strtoupper($gatewayData['payment_method']['apm']['provider']) === 'ERATY') {
+                $orderAdditionalInfo = new OrderAdditionalInfo();
+                $orderAdditionalInfo->setAdditionalInfo($order->id, 'isEraty', true);
+            }
+
             // Store payment method ID in OrderAdditionalInfo (required for refunds)
             $this->storePaymentMethodId($order);
 

@@ -127,7 +127,7 @@ class RequestHelper
         // Use native file_get_contents with hardcoded php://input stream
         // This is safe as php://input is a read-only stream for raw POST data
         $rawContent = self::getRequestBody();
-        $headers = \WebserviceRequest::getallheaders();
+        $headers = self::getAllHeaders();
         $this->setHeaders($headers);
 
         if (isset($headers['Content-Encoding']) && strpos($headers['Content-Encoding'], 'gzip') !== false) {
@@ -167,5 +167,37 @@ class RequestHelper
         $content = file_get_contents('php://input');
         
         return $content !== false ? $content : '';
+    }
+
+    /**
+     * PHP-native replacement for getallheaders().
+     *
+     * Reconstructs incoming request headers from $_SERVER, making header
+     * extraction work consistently across Apache, Nginx, FPM and IIS.
+     *
+     * @return array
+     */
+    public static function getAllHeaders(): array
+    {
+        $headers = [];
+
+        foreach ($_SERVER as $key => $value) {
+            if (strpos($key, 'HTTP_') === 0) {
+                $headerName = str_replace(
+                    ' ',
+                    '-',
+                    ucwords(str_replace('_', ' ', strtolower(substr($key, 5))))
+                );
+                $headers[$headerName] = $value;
+            } elseif ($key === 'CONTENT_TYPE') {
+                $headers['Content-Type'] = $value;
+            } elseif ($key === 'CONTENT_LENGTH') {
+                $headers['Content-Length'] = $value;
+            } elseif ($key === 'CONTENT_MD5') {
+                $headers['Content-MD5'] = $value;
+            }
+        }
+
+        return $headers;
     }
 }

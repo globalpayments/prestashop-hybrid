@@ -15,6 +15,8 @@
 
 namespace GlobalPayments\PaymentGatewayProvider\Platform\Utils;
 
+use GlobalPayments\PaymentGatewayProvider\Platform\Helper\RequestHelper;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -182,11 +184,9 @@ class HppResponseParser
         if (!empty($_REQUEST['X-GP-Signature'])) {
             $signature = (string) $_REQUEST['X-GP-Signature'];
         } else {
-            if (function_exists('getallheaders')) {
-                $headers = array_change_key_case(getallheaders());
-                $signature = ( isset($headers['x-gp-signature']) && !empty($headers['x-gp-signature']) ) ?
-                $headers['x-gp-signature'] : '';
-            }
+            $headers = array_change_key_case(RequestHelper::getAllHeaders());
+            $signature = ( isset($headers['x-gp-signature']) && !empty($headers['x-gp-signature']) ) ?
+            $headers['x-gp-signature'] : '';
             
             //Final attempt to get the signature
             if ("" === $signature && isset($_SERVER['HTTP_X_GP_SIGNATURE']) &&

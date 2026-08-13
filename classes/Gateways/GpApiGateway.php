@@ -302,6 +302,10 @@ class GpApiGateway extends AbstractGateway
             || (strtoupper((string) $defaultCountry->iso_code) === 'CA'
                 && strtoupper((string) $defaultCurrency->iso_code) === 'CAD')
         );
+        $isEratyEligible = (
+            strtoupper((string) $defaultCountry->iso_code) === 'PL'
+            && strtoupper((string) $defaultCurrency->iso_code) === 'PLN'
+        );
 
         $integrationType = \Configuration::get($this->id . '_integrationType');
         $isDropInUI = ($integrationType === IntegrationType::DROP_IN_UI);
@@ -584,6 +588,20 @@ class GpApiGateway extends AbstractGateway
                 'default' => '1000',
             ],
         ];
+
+        // Conditionally add eRaty info field (only for Poland with PLN currency)
+        if ($isEratyEligible) {
+            $fields[$this->id . '_hppEratyInfo'] = [
+                'title' => $this->translator->trans('HPP: eRaty', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'hidden',
+                'description' => $this->translator->trans(
+                    'eRaty (Installment Financing) is available via Hosted Checkout for eligible merchants.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => '',
+            ];
+        }
 
         // Conditionally add MX Installments field (only for Mexico with MXN currency)
         if ($isMxInstallmentsEligible) {

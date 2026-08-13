@@ -31,6 +31,7 @@ use GlobalPayments\Api\Entities\Enums\PhoneNumberType;
 use GlobalPayments\Api\Entities\PayerDetails;
 use GlobalPayments\Api\Entities\PhoneNumber;
 use GlobalPayments\Api\Utils\CountryUtils;
+use GlobalPayments\Api\Utils\StringUtils;
 use GlobalPayments\PaymentGatewayProvider\Platform\Helper\CustomerHelper;
 use GlobalPayments\PaymentGatewayProvider\Requests\AbstractRequest;
 use GlobalPayments\PaymentGatewayProvider\Requests\RequestArg;
@@ -134,7 +135,7 @@ class InitiatePaymentRequest extends AbstractRequest
             ->withName($refText)
             ->withDescription('Payment for Order #' . $orderId)
             ->withReference($refText)
-            ->withAmount($amount)
+            ->withAmount(StringUtils::toNumeric($amount, $currency))
             ->withPayer($payer)
             ->withCurrency($currency)
             ->withOrderReference($refText)
@@ -208,7 +209,9 @@ class InitiatePaymentRequest extends AbstractRequest
         }
        
         // Add alternative payment methods
-        $enabledAlternativePayments = $this->getAlternativePaymentMethods();
+        // Pass billing country and currency for eligibility checks (e.g., eRaty requires PL + PLN)
+        $billingCountryCode = $billingAddress['countryCode'] ?? null;
+        $enabledAlternativePayments = $this->getAlternativePaymentMethods($billingCountryCode, $currency);
         if (!empty($enabledAlternativePayments)) {
             $hppPaymentMethods = array_merge($hppPaymentMethods, $enabledAlternativePayments);
         }
@@ -360,9 +363,11 @@ class InitiatePaymentRequest extends AbstractRequest
     /**
      * Get enabled alternative payment methods from configuration
      *
+     * @param string|null $billingCountryCode The billing country code (ISO 2-letter)
+     * @param string|null $currency The transaction currency code (ISO 3-letter)
      * @return array Array of enabled payment method constants
      */
-    protected function getAlternativePaymentMethods(): array
+    protected function getAlternativePaymentMethods(?string $billingCountryCode = null, ?string $currency = null): array
     {
         $enabledAlternativePayments = [];
 
@@ -378,7 +383,38 @@ class InitiatePaymentRequest extends AbstractRequest
             $enabledAlternativePayments[] = HPPAllowedPaymentMethods::PAYU;
         }
 
+        // eRaty is automatically enabled when eligibility conditions are met:
+        // - Billing country must be Poland (PL)
+        // - Transaction currency must be PLN
+        // Availability is controlled at the gateway/account level, not via plugin configuration
+        if ($this->isEratyEligible($billingCountryCode, $currency)) {
+            $enabledAlternativePayments[] = HPPAllowedPaymentMethods::ERATY;
+        }
+
         return $enabledAlternativePayments;
+    }
+
+    /**
+     * Check if eRaty payment method is eligible based on billing country and currency
+     *
+     * eRaty is only available when:
+     * - Billing country = Poland (PL)
+     * - Transaction currency = PLN
+     *
+     * @param string|null $billingCountryCode The billing country code (ISO 2-letter)
+     * @param string|null $currency The transaction currency code (ISO 3-letter)
+     * @return bool True if eRaty is eligible for this transaction
+     */
+    protected function isEratyEligible(?string $billingCountryCode, ?string $currency): bool
+    {
+        if (empty($billingCountryCode) || empty($currency)) {
+            return false;
+        }
+
+        $countryCode = strtoupper($billingCountryCode);
+        $currencyCode = strtoupper($currency);
+
+        return ($countryCode === 'PL' && $currencyCode === 'PLN');
     }
 
     /**

@@ -254,8 +254,18 @@
             let acceptOpenBanking = (this.isOpenBankingEnabled() === true) ? true : false;
 
             let apmsEnabled = (acceptBlik || acceptOpenBanking) ? true : false;
-
+            let apmArray = false;
             if (apmsEnabled) {
+                apmArray = [];
+                if (acceptBlik) {
+                    apmArray.push(GlobalPayments.enums.Apm.Blik);
+                }
+                if (acceptOpenBanking) {
+                    apmArray.push(GlobalPayments.enums.Apm.OpenBankingPayment);
+                }
+                if (apmArray.length === 0) {
+                    apmArray = false;
+                }
                 // Use baseCurrency/baseCountry from gatewayOptions, fallback to PLN/PL
                 var baseCurrency = this.gatewayOptions.baseCurrency || 'PLN';
                 var baseCountry = this.gatewayOptions.baseCountry || 'PL';
@@ -379,7 +389,7 @@
                     formConfig.amount = this.toMinorUnitsAmount(installmentsAmount);
                 } else if (apmsEnabled) {
                     formConfig.amount = this.order.amount ? this.order.amount : '0';
-                    formConfig.apms = [];
+                    formConfig.apms = apmArray;
                 }
 
                 this.cardForm = GlobalPayments.creditCard.form(

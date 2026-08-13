@@ -512,6 +512,14 @@ class TransactionManagement
      */
     private function validateRefundAmount($psOrder, $totalToBeRefunded)
     {
+        // Check if payment method is eRaty - refunds not supported
+        if ($this->isEratyPayment($psOrder)) {
+            throw new \Exception(
+                'Refunds for eRaty transactions are not supported via PrestaShop. ' .
+                'Please follow your eRaty/acquirer refund process.'
+            );
+        }
+
         // Get the total amount of the original order
         $originalOrderAmount = (float) $psOrder->total_paid;
 
@@ -674,5 +682,18 @@ class TransactionManagement
                 \PrestaShopLogger::LOG_SEVERITY_LEVEL_ERROR
             );
         }
+    }
+
+    /**
+     * Check if the order was paid using eRaty payment method
+     *
+     * @param \Order $psOrder
+     *
+     * @return bool True if the order was paid using eRaty
+     */
+    private function isEratyPayment($psOrder): bool
+    {
+        $orderAdditionalInfo = new OrderAdditionalInfo();
+        return (bool) $orderAdditionalInfo->getAdditionalInfo($psOrder->id, 'isEraty');
     }
 }

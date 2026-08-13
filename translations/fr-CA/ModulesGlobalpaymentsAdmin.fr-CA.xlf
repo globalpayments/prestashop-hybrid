@@ -815,6 +815,11 @@ Exemple : FR|GB|IE]]></target>
         <target>La confirmation de paiement pour cette méthode peut prendre quelque jours. Les remboursements ne sont possibles qu'après reception du paiement final. SVP attendez la confirmation, ou contactez le support si le délai persiste.</target>
         <note>Line: </note>
       </trans-unit>
+      <trans-unit id="eratytransactionrefund">
+        <source>Refunds for eRaty transactions are not supported via PrestaShop. Please follow your eRaty/acquirer refund process.</source>
+        <target>Les remboursements pour les transactions eRaty ne sont pas pris en charge dans Prestashop. Veuillez suivre le processus de remboursement de votre acquéreur ou d'eRaty.</target>
+        <note>Line: </note>
+      </trans-unit>
     </body>
   </file>
 </xliff>

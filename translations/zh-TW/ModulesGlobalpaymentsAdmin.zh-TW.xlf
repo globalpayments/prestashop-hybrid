@@ -963,6 +963,11 @@ PAN_ONLY 可能會暴露 FPAN，因此需要額外的 SCA 驗證步驟（最高�
         <target>此付款方式的確認可能需要數天時間。只有在收到最終付款狀態後才能進行退款。若延遲持續，請等待確認或聯繫客服支援。</target>
         <note>Line: </note>
       </trans-unit>
+      <trans-unit id="eratytransactionrefund">
+        <source>Refunds for eRaty transactions are not supported via PrestaShop. Please follow your eRaty/acquirer refund process.</source>
+        <target>Prestashop 不支援透過 eRaty 交易進行退款。請依照您的 eRaty／收單機構退款流程處理。</target>
+        <note>Line: </note>
+      </trans-unit>
     </body>
   </file>
 </xliff>

@@ -33,10 +33,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ========== TOOLTIP FOR REFUND BUTTON ==========
     
-    // Check if tooltip should be shown (payment accepted + Open Banking)
+    // Check if tooltip should be shown (payment accepted + Open Banking, or eRaty)
     function shouldShowTooltip() {
         if (typeof globalpayments_order_data !== 'undefined' && globalpayments_order_data) {
             return globalpayments_order_data.isPartialRefundDisabled === true;
+        }
+        return false;
+    }
+
+    // Check if refund is completely disabled (e.g., eRaty payments)
+    function isRefundCompletelyDisabled() {
+        if (typeof globalpayments_order_data !== 'undefined' && globalpayments_order_data) {
+            return globalpayments_order_data.isRefundDisabledCompletely === true;
+        }
+        return false;
+    }
+
+    // Check if payment is eRaty
+    function isEratyPayment() {
+        if (typeof globalpayments_order_data !== 'undefined' && globalpayments_order_data) {
+            return globalpayments_order_data.isEratyPayment === true;
         }
         return false;
     }
@@ -291,6 +307,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const isRefundAction = isRefundElement(element);
         
         if (isRefundAction) {
+            // Check if refund is completely disabled (e.g., eRaty payments)
+            if (isRefundCompletelyDisabled()) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                const message = getTooltipMessage();
+                alert('GLOBALPAYMENTS: Refund Not Supported\n\n' + message);
+                return false;
+            }
+
             // Only block if validation specifically fails (invalid amount)
             if (!validateRefundAmounts()) {
                 e.preventDefault();

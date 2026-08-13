@@ -111,7 +111,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '2.2.0';
+        $this->version = '2.3.0';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
@@ -602,12 +602,28 @@ class GlobalPayments extends PaymentModule
                     || stripos($order->payment, 'Bank Payment') !== false
                 );
 
+                // Check if payment method is eRaty (from OrderAdditionalInfo)
+                $isEratyPayment = (bool) $orderAdditionalInfo->getAdditionalInfo($orderId, 'isEraty');
+
                 // Translated message for Open Banking partial refund not supported
                 $partialRefundNotSupportedMessage = $this->getTranslator()->trans(
                     'Payment confirmation for this method may take several days. Refunds are only available after a final payment status is received. Please wait for confirmation or contact support if the delay continues.',
                     [],
                     'Modules.Globalpayments.Admin'
                 );
+
+                // eRaty-specific refund message
+                $eratyRefundNotSupportedMessage = $this->getTranslator()->trans(
+                    'Refunds for eRaty transactions are not supported via PrestaShop. Please follow your eRaty/acquirer refund process.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                );
+
+                // Determine which refund disabled message to show
+                $refundDisabledMessage = $partialRefundNotSupportedMessage;
+                if ($isEratyPayment) {
+                    $refundDisabledMessage = $eratyRefundNotSupportedMessage;
+                }
 
                 Media::addJsDef([
                     'globalpayments_order_data' => [
@@ -622,8 +638,10 @@ class GlobalPayments extends PaymentModule
                         'paymentMethod' => $order->payment,
                         'isPaymentAccepted' => $isPaymentAccepted,
                         'isOpenBankingPayment' => $isOpenBankingPayment,
-                        'isPartialRefundDisabled' => ($isPaymentAccepted && $isOpenBankingPayment),
-                        'partialRefundDisabledMessage' => $partialRefundNotSupportedMessage,
+                        'isEratyPayment' => $isEratyPayment,
+                        'isPartialRefundDisabled' => ($isPaymentAccepted && $isOpenBankingPayment) || $isEratyPayment,
+                        'isRefundDisabledCompletely' => $isEratyPayment,
+                        'partialRefundDisabledMessage' => $refundDisabledMessage,
                     ],
                 ]);
             }

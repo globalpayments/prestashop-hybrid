@@ -15,6 +15,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const currentEndpointLabel = "{l s='Current Endpoint:' mod='globalpayments' js=1}";
+    const eratyTooltipMessage = "{l s='This payment method must be enabled at the merchant account level.' mod='globalpayments' js=1}";
 
     // Transaction endpoints from server-side data
     const transactionEndpoints = {
@@ -153,6 +154,74 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(tryAddTooltip, 200);
     }
     tryAddTooltip();
+
+    // Add tooltip to eRaty info label
+    function addEratyTooltip() {
+        // First check if the field exists
+        const eratyField = document.getElementById('globalpayments_ucp_hppEratyInfo');
+        if (!eratyField) {
+            return false;
+        }
+
+        // Find the label by looking for the closest form-group and then the label
+        const formGroup = eratyField.closest('.form-group');
+        if (!formGroup) {
+            return false;
+        }
+
+        const eratyLabel = formGroup.querySelector('label');
+        if (!eratyLabel || eratyLabel.querySelector('.gp-eraty-tooltip-wrapper')) {
+            return false;
+        }
+
+        const tooltipWrapper = document.createElement('span');
+        tooltipWrapper.className = 'gp-eraty-tooltip-wrapper';
+        tooltipWrapper.style.cssText = 'margin-left: 8px; position: relative; display: inline-block; vertical-align: middle;';
+
+        const icon = document.createElement('span');
+        icon.textContent = '?';
+        icon.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background-color: #fff; color: #333; border: 1.5px solid #333; font-size: 12px; font-weight: bold; cursor: help; line-height: 18px;';
+
+        const bubble = document.createElement('span');
+        bubble.textContent = eratyTooltipMessage;
+        bubble.style.cssText = 'visibility: hidden; opacity: 0; position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); width: 350px; background-color: #fff; color: #333; padding: 12px 14px; border-radius: 6px; font-size: 13px; line-height: 1.5; box-shadow: 0 3px 12px rgba(0,0,0,0.15); border: 1px solid #ddd; z-index: 10000; transition: opacity 0.3s ease; white-space: normal; text-align: left;';
+
+        const arrowBorder = document.createElement('span');
+        arrowBorder.style.cssText = 'content: ""; position: absolute; right: 100%; top: 50%; transform: translateY(-50%); border: 7px solid transparent; border-right-color: #ddd;';
+        bubble.appendChild(arrowBorder);
+
+        const arrow = document.createElement('span');
+        arrow.style.cssText = 'content: ""; position: absolute; right: 100%; top: 50%; transform: translateY(-50%); border: 6px solid transparent; border-right-color: #fff; margin-right: -1px;';
+        bubble.appendChild(arrow);
+
+        tooltipWrapper.addEventListener('mouseenter', function() {
+            bubble.style.visibility = 'visible';
+            bubble.style.opacity = '1';
+        });
+
+        tooltipWrapper.addEventListener('mouseleave', function() {
+            bubble.style.visibility = 'hidden';
+            bubble.style.opacity = '0';
+        });
+
+        tooltipWrapper.appendChild(icon);
+        tooltipWrapper.appendChild(bubble);
+        eratyLabel.appendChild(tooltipWrapper);
+
+        return true;
+    }
+
+    // Initialize eRaty tooltip with retries
+    let eratyTooltipAttempts = 0;
+    function tryAddEratyTooltip() {
+        if (addEratyTooltip() || eratyTooltipAttempts >= 10) {
+            return;
+        }
+        eratyTooltipAttempts++;
+        setTimeout(tryAddEratyTooltip, 200);
+    }
+    tryAddEratyTooltip();
+
     updateEndpointDisplay();
 });
 </script>

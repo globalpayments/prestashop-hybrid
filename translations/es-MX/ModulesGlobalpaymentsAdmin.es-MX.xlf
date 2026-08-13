@@ -812,6 +812,11 @@ Actualmente, Global Payments no carga esta etapa de seguridad Google Pay con un 
         <target>La confirmación de este método de pago puede tomar varios días. Las devoluciones solo estarán disponibles después de que el estatus final de pago sea recibido. Por favor espere la confirmación o contacte a soporte en caso de que el retraso continue.</target>
         <note>Line: </note>
       </trans-unit>
+      <trans-unit id="eratytransactionrefund">
+        <source>Refunds for eRaty transactions are not supported via PrestaShop. Please follow your eRaty/acquirer refund process.</source>
+        <target>Los reembolsos de transacciones eRaty no son compatibles a través de Prestashop. Siga el proceso de reembolso de eRaty o de su adquirente.</target>
+        <note>Line: </note>
+      </trans-unit>
     </body>
   </file>
 </xliff>

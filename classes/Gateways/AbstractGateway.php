@@ -1235,7 +1235,7 @@ abstract class AbstractGateway implements GatewayInterface
 
         $context->smarty->assign([
             'action' => $formAction,
-            'formData' => ($this->id === GatewayId::GP_UCP || $this->id === GatewayId::TRANSIT) ? $this->securePaymentFieldsConfiguration() : [],
+            'formData' => ($this->id === GatewayId::GP_UCP || $this->id === GatewayId::TRANSIT || $this->id === GatewayId::GENIUS) ? $this->securePaymentFieldsConfiguration() : [],
             'id' => $this->id,
             'allowCardSaving' => !$customer->is_guest && $this->allowCardSaving && $isCheckout,
             'envIndicator' => $this->environmentIndicatorActive(),

@@ -125,12 +125,17 @@
             $(document).ready(function (e) {
                 const isHppEnabled = that.isHppEnabled();
 
-                $(helper.getPlaceOrderButtonSelector()).on('click', function ($e) {
+                $(document).on('submit', "form[id*='" + that.id +"']" , function ($e) {
                     // Get the currently selected payment method
                     var paymentMethodSelected = $('input.ps-shown-by-js:checked , .payment-option__input.form-check-input.ps-shown-by-js:checked')
                     .attr('data-module-name');
                       if(paymentMethodSelected && paymentMethodSelected.includes("-")){
                         paymentMethodSelected = paymentMethodSelected.replace(/-.*/, '');                    
+                    }
+
+                    // Only handle if this instance's gateway is selected
+                    if (paymentMethodSelected !== that.id) {
+                        return true; // Let other handlers or default behavior handle it
                     }
 
                     // For HPP mode, use AJAX to prevent raw JSON error display
@@ -147,8 +152,8 @@
                         return false;
                     }
                     
-                    // Handle Transit payment - need to tokenize first (unless using saved card)
-                    if (paymentMethodSelected === 'globalpayments_transit') {
+                    // Handle Transit/Genius payment - need to tokenize first (unless using saved card)
+                    if (paymentMethodSelected === 'globalpayments_transit' || paymentMethodSelected === 'globalpayments_genius') {
                         $e.preventDefault();
                         $e.stopImmediatePropagation();
                         
@@ -177,13 +182,14 @@
                         return false;
                     }
                     
+                    // Handle GP-UCP with saved card
                     if (helper.getTokenId(that.id) && that.id === 'globalpayments_ucp') {
                         $e.preventDefault();
                         $e.stopImmediatePropagation();
 
                         // Saved cards skip 3DS - they were already authenticated when first saved
                         helper.placeOrder(that.id);
-                        return;
+                        return false;
                     }
 
                     return true;
@@ -416,7 +422,6 @@
                     bankName,
                     acquirer
                 } = paymentProviderData;
-                console.log('Selected provider: ' + provider);
 
                 // Prevent any default form submission behavior for BLIK
                 if (provider === GlobalPayments.enums.ApmProviders.Blik) {
@@ -427,7 +432,6 @@
                     }
                     // Also prevent any form submission on the page
                     $('form').off('submit.blik').on('submit.blik', function(e) {
-                        console.log('Form submission prevented for BLIK payment');
                         e.preventDefault();
                         e.stopImmediatePropagation();
                         return false;
@@ -453,7 +457,6 @@
 
                 switch (provider) {
                     case GlobalPayments.enums.ApmProviders.Blik:
-                        console.log('BLIK payment method selected');
 
                         // Block UI during processing
                         helper.blockOnSubmit();
@@ -472,7 +475,6 @@
                             if (this.order.amount) ajaxData.amount = this.order.amount;
                             if (this.order.currency) ajaxData.currency = this.order.currency;
                         }
-                        console.log('BLIK AJAX Data:', ajaxData);
                         $.ajax({
                             url: ajaxUrl,
                             type: 'POST',
@@ -494,8 +496,6 @@
                                     });
                                     window.dispatchEvent(merchantCustomEventProvideDetails);
 
-                                    console.log('Redirecting to:', response.redirect_url);
-
                                 } else {
                                     helper.showPaymentError(this.id, response.message || 'Payment processing failed');
                                 }
@@ -515,7 +515,6 @@
                         // Return early to prevent further processing
                         return;
                     case GlobalPayments.enums.ApmProviders.OpenBanking:
-                        console.log('bankName',bankName);
                         if(!bankName){
                             detail = {
                                 provider,
@@ -540,7 +539,6 @@
                                 if (this.order.currency) ajaxData.currency = this.order.currency;
                             }
                             ajaxData.bank = bankName;
-                            console.log('Open Banking AJAX Data:', ajaxData);
                             $.ajax({
                                 url: ajaxUrl,
                                 type: 'POST',
@@ -561,8 +559,6 @@
                                             detail: detail
                                         });
                                         window.dispatchEvent(merchantCustomEventProvideDetails);
-
-                                        console.log('Redirecting to:', response.redirect_url);
 
                                     } else {
                                         helper.showPaymentError(this.id, response.message || 'Payment processing failed');
@@ -630,6 +626,25 @@
                 this.resetValidationErrors();
                 return;
             }
+            
+            // Normalize response for Transit/Genius (v1 endpoint returns different field names)
+            // v1 SDK returns: { temporary_token, card: { masked_card_number, type, expiry_month, expiry_year } }
+            // We need: { paymentReference, details: { cardBin, cardLast4, cardType, expiryMonth, expiryYear } }
+            if ((this.id === 'globalpayments_transit' || this.id === 'globalpayments_genius')) {
+                if (response.temporary_token) {
+                    response = this.normalizeTransitResponse(response);
+                } else if (response.token_value) {
+                    // Alternative field name
+                    response = {
+                        paymentReference: response.token_value,
+                        details: response.details || {
+                            expiryMonth: '12',
+                            expiryYear: '2030'
+                        }
+                    };
+                }
+            }
+            
             if (!this.validateTokenResponse(response)) {
                 return;
             }
@@ -637,26 +652,13 @@
             this.tokenResponse = JSON.stringify(response);
 
             var that = this;
-
-            this.cardForm.frames['card-cvv'].getCvv().then(function (c) {
-
-                /**
-                 * CVV; needed for TransIT gateway processing only
-                 *
-                 * @type {string}
-                 */
-                var cvvVal = c;
-
-                var tokenResponseElement =
-                    /**
-                     * Get hidden
-                     *
-                     * @type {HTMLInputElement}
-                     */
-                    (document.getElementById(that.id + '-token_response'));
+            
+            // Helper function to finalize and place order
+            var finalizeAndPlaceOrder = function(cvvVal) {
+                var tokenResponseElement = document.getElementById(that.id + '-token_response');
                 if (!tokenResponseElement) {
-                    tokenResponseElement      = document.createElement('input');
-                    tokenResponseElement.id   = that.id + '-token_response';
+                    tokenResponseElement = document.createElement('input');
+                    tokenResponseElement.id = that.id + '-token_response';
                     tokenResponseElement.name = that.id + '[token_response]';
                     tokenResponseElement.type = 'hidden';
                     var targetForm = helper.getForm(that.id);
@@ -668,7 +670,9 @@
                     targetForm.appendChild(tokenResponseElement);
                 }
 
-                response.details.cardSecurityCode = cvvVal;
+                if (cvvVal && response.details) {
+                    response.details.cardSecurityCode = cvvVal;
+                }
                 tokenResponseElement.value = JSON.stringify(response);
 
                 if (!that.isThreeDSecureEnabled()) {
@@ -677,8 +681,62 @@
                 }
                 if (that.id === 'globalpayments_ucp') {
                     that.threeDSecure();
+                } else {
+                    // Transit/Genius don't use GP-API 3DS
+                    helper.placeOrder(that.id);
                 }
-            });
+            };
+
+            // Try to get CVV from frames (needed for TransIT gateway)
+            if (this.cardForm && this.cardForm.frames && this.cardForm.frames['card-cvv'] && 
+                typeof this.cardForm.frames['card-cvv'].getCvv === 'function') {
+                this.cardForm.frames['card-cvv'].getCvv().then(function (c) {
+                    finalizeAndPlaceOrder(c);
+                }).catch(function(error) {
+                    console.warn('Could not retrieve CVV:', error);
+                    finalizeAndPlaceOrder(null);
+                });
+            } else {
+                // No CVV frame available (drop-in UI or different form type)
+                finalizeAndPlaceOrder(null);
+            }
+        },
+        
+        /**
+         * Normalizes Transit/Genius (v1 endpoint) token response to GP-API format
+         *
+         * @param {object} response - Raw response from v1 endpoint
+         * @returns {object} - Normalized response with paymentReference and details
+         */
+        normalizeTransitResponse: function(response) {
+            var cardTypeMap = {
+                'MasterCard': 'mastercard',
+                'Visa': 'visa',
+                'Discover': 'discover',
+                'American Express': 'amex',
+                'Diners Club': 'diners',
+                'JCB': 'jcb'
+            };
+            
+            var maskedNumber = response.card ? (response.card.masked_card_number || '') : '';
+            var cardType = response.card ? (cardTypeMap[response.card.type] || response.card.type || '') : '';
+            var expiryYear = '';
+            if (response.card && response.card.expiry_year) {
+                var year = parseInt(response.card.expiry_year);
+                expiryYear = (year < 100 ? (year + 2000) : year).toString();
+            }
+            
+            return {
+                paymentReference: response.temporary_token,
+                details: {
+                    cardNumber: maskedNumber,
+                    cardBin: maskedNumber.substring(0, 6),
+                    cardLast4: maskedNumber.substring(maskedNumber.length - 4),
+                    cardType: cardType,
+                    expiryMonth: response.card ? (response.card.expiry_month || '') : '',
+                    expiryYear: expiryYear
+                }
+            };
         },
 
         /**
@@ -1135,6 +1193,11 @@
     // Create Transit instance if Transit params are defined
     if (typeof globalpayments_transit_params !== 'undefined' && globalpayments_transit_params) {
         new GlobalPaymentsPrestaShop(globalpayments_transit_params, (window).globalpayments_transit_threedsecure_params || {});
+    }
+    
+    // Create Genius instance if Genius params are defined
+    if (typeof globalpayments_genius_params !== 'undefined' && globalpayments_genius_params) {
+        new GlobalPaymentsPrestaShop(globalpayments_genius_params, (window).globalpayments_genius_threedsecure_params || {});
     }
 }(
     /**

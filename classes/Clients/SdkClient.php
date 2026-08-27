@@ -119,6 +119,14 @@ class SdkClient implements ClientInterface
     ];
 
     /**
+     * VaultToken from Genius BoardCard operation
+     * Stored here so it can be set on the response for saving
+     *
+     * @var string|null
+     */
+    protected $geniusVaultToken = null;
+
+    /**
      * Card data
      *
      * @var CreditCardData
@@ -143,6 +151,14 @@ class SdkClient implements ClientInterface
     public function execute()
     {
         $this->configureSdk();
+        
+        // Reset Genius VaultToken from previous transaction
+        $this->geniusVaultToken = null;
+        
+        // For Genius gateway: convert OTT to VaultToken before processing
+        // when saving a card during Sale/Authorize
+        $this->handleGeniusTokenization();
+        
         $builder = $this->getTransactionBuilder();
 
         if ('transactionDetail' === $this->arguments['TXN_TYPE']) {
@@ -159,6 +175,12 @@ class SdkClient implements ClientInterface
         }
         $response = $builder->execute();
 
+        // For Genius: if we did a BoardCard, set the VaultToken on the response
+        // so PaymentTokenHandler can save it (Sale response doesn't include VaultToken)
+        if ($this->geniusVaultToken !== null && $response instanceof Transaction) {
+            $response->token = $this->geniusVaultToken;
+        }
+
         // Transit doesn't support updateTokenExpiry - skip for Transit gateway
         $gatewayProvider = $this->arguments['SERVICES_CONFIG']['gatewayProvider'] ?? null;
         if ($response instanceof Transaction && $response->token && $gatewayProvider !== GatewayProvider::TRANSIT) {
@@ -167,6 +189,75 @@ class SdkClient implements ClientInterface
         }
 
         return $response;
+    }
+    
+    /**
+     * Handle Genius gateway tokenization
+     * 
+     * For Genius, OTT (One-Time Tokens) must be converted to VaultTokens
+     * via BoardCard before they can be saved and reused.
+     *
+     * @return void
+     */
+    protected function handleGeniusTokenization()
+    {
+        $gatewayProvider = $this->arguments['SERVICES_CONFIG']['gatewayProvider'] ?? null;
+        
+        // Only applies to Genius gateway
+        if ($gatewayProvider !== GatewayProvider::GENIUS) {
+            return;
+        }
+        
+        $txnType = $this->getArgument(RequestArg::TXN_TYPE);
+        
+        // Only for authorization transactions (Sale/Authorize)
+        if (!in_array($txnType, [TransactionType::SALE, TransactionType::AUTHORIZE], true)) {
+            return;
+        }
+        
+        // Only when save card is requested
+        if (!$this->hasArgument(RequestArg::REQUEST_MULTI_USE_TOKEN) 
+            || !$this->getArgument(RequestArg::REQUEST_MULTI_USE_TOKEN)) {
+            return;
+        }
+        
+        // Only if using a saved card already, skip (it's already a VaultToken)
+        if ($this->hasArgument(RequestArg::MULTI_USE_TOKEN_ID) 
+            && !empty($this->getArgument(RequestArg::MULTI_USE_TOKEN_ID))) {
+            return;
+        }
+        
+        // Check if current token is an OTT (one-time token)
+        if ($this->cardData === null || empty($this->cardData->token)) {
+            return;
+        }
+        
+        $currentToken = $this->cardData->token;
+        if (strpos($currentToken, 'OTT_') !== 0) {
+            // Not an OTT, already a VaultToken
+            return;
+        }
+        
+        // Do BoardCard (verify) to convert OTT to VaultToken
+        try {
+            $boardCardResponse = $this->cardData->verify()
+                ->withRequestMultiUseToken(true)
+                ->execute();
+            
+            if ($boardCardResponse instanceof Transaction && !empty($boardCardResponse->token)) {
+                // Successfully got VaultToken - update card data to use it
+                $this->cardData->token = $boardCardResponse->token;
+                // Store for later - will be set on Sale response for saving
+                $this->geniusVaultToken = $boardCardResponse->token;
+            }
+        } catch (\Exception $e) {
+            // If BoardCard fails, the Sale will proceed with OTT
+            // but token won't be saved (handled by PaymentTokenHandler)
+            // Log the error but don't block the transaction
+            if (!empty($this->arguments[RequestArg::SERVICES_CONFIG]['debug'])) {
+                error_log('Genius BoardCard failed: ' . $e->getMessage());
+            }
+        }
     }
 
     public function submitRequest(RequestInterface $request)
@@ -457,7 +548,12 @@ class SdkClient implements ClientInterface
         }
 
         if (isset($token->details->cardSecurityCode)) {
-            $this->cardData->cvn = $token->details->cardSecurityCode;
+            $rawCvn = (string) $token->details->cardSecurityCode;
+            $normalizedCvn = preg_replace('/\D+/', '', $rawCvn);
+
+            if (!empty($normalizedCvn) && strlen($normalizedCvn) >= 3 && strlen($normalizedCvn) <= 4) {
+                $this->cardData->cvn = $normalizedCvn;
+            }
         }
 
         if (isset($token->details->cardType)) {

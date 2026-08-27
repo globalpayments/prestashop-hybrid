@@ -146,6 +146,13 @@ class TransitGateway extends AbstractGateway
     public $isProduction;
 
     /**
+     * Should debug/logging be enabled
+     *
+     * @var bool
+     */
+    public $debug;
+
+    /**
      * Integration's Developer ID
      *
      * @var string
@@ -183,6 +190,7 @@ class TransitGateway extends AbstractGateway
             'deviceId' => $this->getCredentialSetting('deviceId'), // For transaction processing
             'developerId' => $this->developerId, // provided during certification
             'environment' => $this->isProduction ? Environment::PRODUCTION : Environment::TEST,
+            'debug' => $this->debug,
         ];
     }
 
@@ -352,6 +360,16 @@ class TransitGateway extends AbstractGateway
                 'class' => 'required live-toggle',
                 'default' => '',
             ],
+            $this->id . '_debug' => [
+                'title' => $this->translator->trans('Enable Logging', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Log all requests to and from gateway. This can also log private data and should only be enabled in a development or stage environment. Logs are saved to var/logs/ directory.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ],
         ];
     }
 
@@ -366,6 +384,28 @@ class TransitGateway extends AbstractGateway
 
         // Skip validation if gateway is not enabled
         if (!\Tools::getValue($this->id . '_enabled')) {
+            return $errors;
+        }
+
+        // Check if another gateway is already enabled - only one gateway allowed at a time
+        $gpUcpEnabled = \Configuration::get(GatewayId::GP_UCP . '_enabled') === '1';
+        $geniusEnabled = \Configuration::get(GatewayId::GENIUS . '_enabled') === '1';
+
+        if ($gpUcpEnabled) {
+            $errors[] = $this->translator->trans(
+                'Another gateway (Global Payments - Unified Payments) is already enabled. Only one gateway can be active at a time. Please disable it first.',
+                [],
+                'Modules.Globalpayments.Admin'
+            );
+            return $errors;
+        }
+
+        if ($geniusEnabled) {
+            $errors[] = $this->translator->trans(
+                'Another gateway (Genius) is already enabled. Only one gateway can be active at a time. Please disable it first.',
+                [],
+                'Modules.Globalpayments.Admin'
+            );
             return $errors;
         }
 

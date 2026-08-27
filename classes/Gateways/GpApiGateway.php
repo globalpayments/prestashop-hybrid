@@ -752,6 +752,29 @@ class GpApiGateway extends AbstractGateway
         if (!\Tools::getValue($this->id . '_enabled')) {
             return $errors;
         }
+
+        // Check if another gateway is already enabled - only one gateway allowed at a time
+        $transitEnabled = \Configuration::get(GatewayId::TRANSIT . '_enabled') === '1';
+        $geniusEnabled = \Configuration::get(GatewayId::GENIUS . '_enabled') === '1';
+
+        if ($transitEnabled) {
+            $errors[] = $this->translator->trans(
+                'Another gateway (TransIT) is already enabled. Only one gateway can be active at a time. Please disable it first.',
+                [],
+                'Modules.Globalpayments.Admin'
+            );
+            return $errors;
+        }
+
+        if ($geniusEnabled) {
+            $errors[] = $this->translator->trans(
+                'Another gateway (Genius) is already enabled. Only one gateway can be active at a time. Please disable it first.',
+                [],
+                'Modules.Globalpayments.Admin'
+            );
+            return $errors;
+        }
+
         if (\Tools::getValue($this->id . '_isProduction')) {
             if (empty(\Tools::getValue($this->id . '_appId')) || empty(\Tools::getValue($this->id . '_appKey'))) {
                 $errors[] = $this->translator->trans('Please provide Live Credentials.', [], 'Modules.Globalpayments.Admin');

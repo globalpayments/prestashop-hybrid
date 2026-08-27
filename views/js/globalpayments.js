@@ -4665,7 +4665,8 @@
 	                resp.details.cardBin = bin;
 	                resp.details.cardLast4 = last4;
 	                resp.details.cardType = type ? type.code : "unknown";
-	                resp.details.cardSecurityCode = !!data["card-cvv"];
+	                var normalizedCvv = String(data["card-cvv"] || "").replace(/\D/g, "");
+					resp.details.cardSecurityCode = normalizedCvv;
 	            }
 	            if (data["card-expiration"] &&
 	                data["card-expiration"].indexOf(" / ") !== -1) {

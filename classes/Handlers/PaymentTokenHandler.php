@@ -15,6 +15,7 @@
 
 namespace GlobalPayments\PaymentGatewayProvider\Handlers;
 
+use GlobalPayments\Api\Entities\Enums\GatewayProvider;
 use GlobalPayments\PaymentGatewayProvider\Data\PaymentTokenData;
 use GlobalPayments\PaymentGatewayProvider\Requests\RequestArg;
 
@@ -30,15 +31,29 @@ class PaymentTokenHandler extends AbstractHandler
             return;
         }
 
-        // Get the multi-use token from response or from request card data
+        // Get the multi-use token from response
         $multiUseToken = $this->response->token;
         
+        // Get gateway provider to handle gateway-specific token logic
+        $config = $this->request->getArgument(RequestArg::SERVICES_CONFIG);
+        $gatewayProvider = $config['gatewayProvider'] ?? null;
+        
         // If response doesn't have token, get it from the payment method ID in request
+        // BUT NOT for Genius gateway - OTT (One-Time Tokens) cannot be reused
         if (empty($multiUseToken) && $this->request->getArgument(RequestArg::CARD_DATA)) {
             $cardData = $this->request->getArgument(RequestArg::CARD_DATA);
-            // The paymentReference is the payment method ID (PMT_xxx) created by GlobalPayments.js
+            
             if (isset($cardData->paymentReference)) {
-                $multiUseToken = $cardData->paymentReference;
+                $paymentRef = $cardData->paymentReference;
+                
+                // For Genius gateway, OTT_ tokens are one-time tokens that cannot be saved
+                // They must first be converted to VaultTokens via BoardCard/Verify operation
+                if ($gatewayProvider === GatewayProvider::GENIUS && $this->isOneTimeToken($paymentRef)) {
+                    // Skip saving OTT for Genius - it won't work for future transactions
+                    return;
+                }
+                
+                $multiUseToken = $paymentRef;
             }
         }
 
@@ -48,5 +63,17 @@ class PaymentTokenHandler extends AbstractHandler
 
         (new PaymentTokenData($this->request->getArguments()))
             ->saveNewToken($multiUseToken, $this->response->cardBrandTransactionId);
+    }
+    
+    /**
+     * Check if the token is a one-time token (OTT) that cannot be reused
+     *
+     * @param string $token
+     * @return bool
+     */
+    private function isOneTimeToken(string $token): bool
+    {
+        // Genius/MerchantWare one-time tokens start with 'OTT_'
+        return strpos($token, 'OTT_') === 0;
     }
 }

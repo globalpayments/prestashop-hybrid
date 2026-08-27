@@ -701,10 +701,8 @@
                     parentGroup.style.display = (show ? "block": "none");
                 }
             });
-            toggleHppSetting('input[type="radio"][id*="hpp"]', hppSelected);
+            toggleHppSetting('[id*="hpp"]', hppSelected);
             toggleHppSetting(`input[name="${this.id}_dcc"]`, hppSelected);
-            toggleHppSetting('input[type="hidden"][id*="hpp"]', hppSelected);
-            toggleHppSetting('input[type="text"][id*="hpp"]', hppSelected);
             toggleHppSetting(`input[type="radio"][id*="Blik"]:not([id*="hpp"]),
                  input[type="radio"][id*="OpenBanking"]:not([id*="hpp"])`, !hppSelected);
             

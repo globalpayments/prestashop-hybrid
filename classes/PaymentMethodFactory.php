@@ -17,6 +17,7 @@ namespace GlobalPayments\PaymentGatewayProvider;
 
 use GlobalPayments\PaymentGatewayProvider\Gateways\AbstractGateway;
 use GlobalPayments\PaymentGatewayProvider\Gateways\GatewayId;
+use GlobalPayments\PaymentGatewayProvider\Gateways\GeniusGateway;
 use GlobalPayments\PaymentGatewayProvider\Gateways\GpApiGateway;
 use GlobalPayments\PaymentGatewayProvider\Gateways\TransitGateway;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\AbstractPaymentMethod;
@@ -46,6 +47,7 @@ class PaymentMethodFactory
         ClickToPay::PAYMENT_METHOD_ID => ClickToPay::class,
         GatewayId::GP_UCP => GpApiGateway::class,
         GatewayId::TRANSIT => TransitGateway::class,
+        GatewayId::GENIUS => GeniusGateway::class,
         GooglePay::PAYMENT_METHOD_ID => GooglePay::class,
         Klarna::PAYMENT_METHOD_ID => Klarna::class,
         PayPal::PAYMENT_METHOD_ID => PayPal::class,

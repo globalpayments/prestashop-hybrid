@@ -16,6 +16,7 @@
 use GlobalPayments\PaymentGatewayProvider\Gateways\{
     AbstractGateway,
     GatewayId,
+    GeniusGateway,
     GpApiGateway,
     TransitGateway
 };
@@ -111,7 +112,7 @@ class GlobalPayments extends PaymentModule
         $this->tab = 'payments_gateways';
         $this->author = 'GlobalPayments';
         $this->controllers = ['customerCards'];
-        $this->version = '2.3.0';
+        $this->version = '2.4.0';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
@@ -134,6 +135,7 @@ class GlobalPayments extends PaymentModule
         $this->paymentMethods = [
             new GpApiGateway(),
             new TransitGateway(),
+            new GeniusGateway(),
         ];
 
         $this->paymentMethods = array_merge($this->paymentMethods, GpApiGateway::getPaymentMethods());
@@ -373,6 +375,8 @@ class GlobalPayments extends PaymentModule
             $this->activeGateway = $this->getActivePaymentMethods()[GatewayId::GP_UCP];
         } elseif (isset($this->getActivePaymentMethods()[GatewayId::TRANSIT])) {
             $this->activeGateway = $this->getActivePaymentMethods()[GatewayId::TRANSIT];
+        } elseif (isset($this->getActivePaymentMethods()[GatewayId::GENIUS])) {
+            $this->activeGateway = $this->getActivePaymentMethods()[GatewayId::GENIUS];
         }
 
         uasort($this->activePaymentMethods, [$this, 'sortPaymentMethods']);
@@ -732,6 +736,7 @@ class GlobalPayments extends PaymentModule
                     'toggle' => [
                         GatewayId::GP_UCP,
                         GatewayId::TRANSIT,
+                        GatewayId::GENIUS,
                         ApplePay::PAYMENT_METHOD_ID,
                         GooglePay::PAYMENT_METHOD_ID,
                     ],

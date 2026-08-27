@@ -3,7 +3,11 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.3.0 (08/13/26)
+## Latest Version ## v2.4.0 (08/27/26)
+- Added Support for Genius gateway
+- Updated GPAPI JS to function better with one-page checkouts
+
+## v2.3.0 (08/13/26)
 - Added Support for eRaty via Hosted Payment Page (HPP)
 - Fixed Apm(blik and payu) issue for upgraded JS version
 - Improved compatibility with some hosting environments when using GPAPI & HPP

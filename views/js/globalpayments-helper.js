@@ -330,11 +330,11 @@
             var isPaymentMethodSelected = $(this.getPaymentMethodRadioSelector(paymentMethodSelected)).first().is(':checked');
             $('.globalpayments.card-submit').hide();
 
-            if (this.helperOptions.hide.includes(paymentMethodSelected)) {
+            if (this.helperOptions.hide && this.helperOptions.hide.includes(paymentMethodSelected)) {
                 this.hidePlaceOrderButton();
                 return;
             }
-            if (!this.helperOptions.toggle.includes(paymentMethodSelected)) {
+            if (this.helperOptions.toggle && !this.helperOptions.toggle.includes(paymentMethodSelected)) {
                 this.showPlaceOrderButton();
                 return;
             }
@@ -348,6 +348,8 @@
                     gpParams = window.globalpayments_secure_payment_fields_params;
                 } else if (paymentMethodSelected === 'globalpayments_transit') {
                     gpParams = window.globalpayments_transit_params;
+                } else if (paymentMethodSelected === 'globalpayments_genius') {
+                    gpParams = window.globalpayments_genius_params;
                 }
                 var integrationMethod = gpParams && gpParams.gatewayOptions ? gpParams.gatewayOptions.integrationMethod : null;
                 if (integrationMethod === 'drop in ui') {
@@ -371,7 +373,6 @@
          * Hide the default PrestaShop 'Place Order' button.
          */
         hidePlaceOrderButton: function() {
-            console.log('hidePlaceOrderButton: ' + this.getPlaceOrderButtonSelector() );
             $(this.getPlaceOrderButtonSelector()).hide();
 
         },

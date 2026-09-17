@@ -278,8 +278,8 @@ class InitiatePaymentRequest extends AbstractRequest
 
         // Set billing address
         $billingAddr = new Address();
-        $billingAddr->streetAddress1 = $billingAddress['address1'] ?? '';
-        $billingAddr->streetAddress2 = $billingAddress['address2'] ?? '';
+        $billingAddr->streetAddress1 = $billingAddress['streetAddress1'] ?? '';
+        $billingAddr->streetAddress2 = $billingAddress['streetAddress2'] ?? '';
         $billingAddr->city = $billingAddress['city'] ?? '';
         // Only set the state if provided, cannot be an empty string
         if(isset($billingAddress['state']) &&
@@ -294,18 +294,18 @@ class InitiatePaymentRequest extends AbstractRequest
         $payer->billingAddress = $billingAddr;
 
         // Set shipping address
-        if (!empty($shippingAddress) && isset($shippingAddress['address1'])) {
+        if (!empty($shippingAddress) && isset($shippingAddress['streetAddress1'])) {
             $shippingAddr = new Address();
-            $shippingAddr->streetAddress1 = $shippingAddress['address1'] ?? '';
-            $shippingAddr->streetAddress2 = $shippingAddress['address2'] ?? '';
+            $shippingAddr->streetAddress1 = $shippingAddress['streetAddress1'] ?? '';
+            $shippingAddr->streetAddress2 = $shippingAddress['streetAddress2'] ?? '';
             $shippingAddr->city = $shippingAddress['city'] ?? '';
 
              // Only set the state if provided, cannot be an empty string
-            if(isset($shippingAddress['state']) &&
-               !empty($shippingAddress['state']) &&
-               strlen($shippingAddr['state'] < 4 )
-               ){
-                 $shippingAddr->state = $shippingAddress['state'];
+            if (isset($shippingAddress['state']) &&
+                !empty($shippingAddress['state']) &&
+                strlen($shippingAddress['state']) < 4
+            ) {
+                $shippingAddr->state = $shippingAddress['state'];
             }
             $shippingAddr->postalCode = $shippingAddress['postalCode'] ?? '';
             $shippingAddr->countryCode = $shippingAddress['countryCode'] ?? '';
@@ -347,7 +347,6 @@ class InitiatePaymentRequest extends AbstractRequest
     protected function getDigitalWallets(): array
     {
         $enabledWallets = [];
-
         // Check configuration for enabled wallets
         if (\Configuration::get('globalpayments_ucp_hppEnableGooglePay')) {
             $enabledWallets[] = 'googlepay';
@@ -355,6 +354,10 @@ class InitiatePaymentRequest extends AbstractRequest
 
         if (\Configuration::get('globalpayments_ucp_hppEnableApplePay')) {
             $enabledWallets[] = 'applepay';
+        }
+
+        if (\Configuration::get('globalpayments_ucp_hppEnableClickToPay')) {
+            $enabledWallets[] = 'CLICK_TO_PAY';
         }
 
         return $enabledWallets;

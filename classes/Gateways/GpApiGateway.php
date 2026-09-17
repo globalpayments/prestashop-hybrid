@@ -158,6 +158,13 @@ class GpApiGateway extends AbstractGateway
     public $hppEnableApplePay;
 
     /**
+     * Enable Click To Pay for HPP
+     *
+     * @var bool
+     */
+    public $hppEnableClickToPay;
+
+    /**
      * Enable BLIK for HPP
      *
      * @var bool
@@ -482,6 +489,16 @@ class GpApiGateway extends AbstractGateway
                 'type' => 'switch',
                 'description' => $this->translator->trans(
                     'Enable or disable Dynamic Currency Conversion (DCC) for transactions processed through Global Payments.',
+                    [],
+                    'Modules.Globalpayments.Admin'
+                ),
+                'default' => 0,
+            ],
+            $this->id . '_hppEnableClickToPay' => [
+                'title' => $this->translator->trans('HPP: Enable Click To Pay', [], 'Modules.Globalpayments.Admin'),
+                'type' => 'switch',
+                'description' => $this->translator->trans(
+                    'Enable Click To Pay as a payment option in the Hosted Payment Page',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),

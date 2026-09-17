@@ -13,16 +13,22 @@
  * @license   LICENSE
  */
 
-use GlobalPayments\Api\Entities\Exceptions\GatewayException;
+use GlobalPayments\Api\Entities\Exceptions\{ApiException, GatewayException};
 use GlobalPayments\Api\Entities\Transaction;
 use GlobalPayments\PaymentGatewayProvider\Data\Order as OrderModel;
 use GlobalPayments\PaymentGatewayProvider\Data\PaymentTokenData;
+use GlobalPayments\PaymentGatewayProvider\Gateways\GatewayId;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethodFactory;
-use GlobalPayments\PaymentGatewayProvider\Platform\Helper\AddressHelper;
-use GlobalPayments\PaymentGatewayProvider\Platform\Helper\CheckoutHelper;
-use GlobalPayments\PaymentGatewayProvider\Platform\Helper\OrderStateHelper;
-use GlobalPayments\PaymentGatewayProvider\Platform\OrderAdditionalInfo;
-use GlobalPayments\PaymentGatewayProvider\Platform\Utils;
+use GlobalPayments\PaymentGatewayProvider\Platform\Helper\{
+    AddressHelper,
+    CheckoutHelper,
+    OrderStateHelper,
+};
+use GlobalPayments\PaymentGatewayProvider\Platform\{
+    OrderAdditionalInfo,
+    TransactionHistory,
+    Utils,
+};
 use GlobalPayments\PaymentGatewayProvider\Requests\IntegrationType;
 
 if (!defined('_PS_VERSION_')) {
@@ -86,6 +92,11 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
         $currency = $this->context->currency;
         $paymentMethodId = Tools::getValue('payment-method-id');
         $paymentMethod = $this->paymentMethodFactory->create($paymentMethodId);
+        $isGeniusGateway = $paymentMethodId === GatewayId::GENIUS;
+        $isUnifiedDropInFlow = $paymentMethodId === GatewayId::GP_UCP
+            && strtolower((string) $paymentMethod->integrationType) === IntegrationType::DROP_IN_UI;
+        $shouldCreateOrderOnDecline = $isGeniusGateway || $isUnifiedDropInFlow;
+        $currentOrder = null;
         
         // Check if this is HPP mode (Hosted Payment Page)
         // If integrationType is HOSTED_PAYMENT_PAGE, redirect to HPP
@@ -127,6 +138,16 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
             $total = (float) $cart->getOrderTotal(true, Cart::BOTH);
             $orderState = $this->orderStateHelper->getOrderState($paymentMethod->paymentAction);
 
+            if ($shouldCreateOrderOnDecline) {
+                $currentOrder = $this->createPendingOrderBeforePayment(
+                    $cart,
+                    $customer,
+                    $currency,
+                    $paymentMethod,
+                    $total
+                );
+            }
+
             // Force generic 'Waiting for payment' state for BLIK and Open Banking
             $blikMethodIds = ['blik'];
             $openBankingMethodIds = ['ob'];
@@ -162,19 +183,35 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
                 'transaction_id' => $transaction->transactionReference->transactionId,
             ];
 
-            $this->module->validateOrder(
-                (int) $cart->id,
-                (int) $orderState,
-                $total,
-                $paymentMethod->title,
-                '',
-                $extraVars,
-                (int) $currency->id,
-                false,
-                $customer->secure_key
-            );
+            if ($shouldCreateOrderOnDecline) {
+                if (!Validate::isLoadedObject($currentOrder)) {
+                    throw new Exception('Failed to load pre-created order before payment.');
+                }
 
-            $currentOrder = Order::getByCartId($cart->id);
+                if ((int) $currentOrder->getCurrentState() !== (int) $orderState) {
+                    $this->orderStateHelper->changeOrderState(
+                        (int) $currentOrder->id,
+                        '',
+                        (int) $orderState
+                    );
+                }
+
+                $this->module->currentOrder = (int) $currentOrder->id;
+            } else {
+                $this->module->validateOrder(
+                    (int) $cart->id,
+                    (int) $orderState,
+                    $total,
+                    $paymentMethod->title,
+                    '',
+                    $extraVars,
+                    (int) $currency->id,
+                    false,
+                    $customer->secure_key
+                );
+
+                $currentOrder = Order::getByCartId($cart->id);
+            }
 
             // Save card details for both new cards and saved cards
             if ($order->cardData && Validate::isLoadedObject($currentOrder)) {
@@ -196,10 +233,9 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
                     ? $expiryMonth . '/' . $expiryYear
                     : '';
                 $orderPayment->card_holder = $order->cardHolderName ?? '';
+                $orderPayment->transaction_id = $transaction->transactionReference->transactionId ?? '';
                 $orderPayment->save();
             }
-
-            $currentOrder = Order::getByCartId($cart->id);
             
             if (Validate::isLoadedObject($currentOrder)) {
                 $paymentMethodFactory = new PaymentMethodFactory();
@@ -232,7 +268,25 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
             }
 
             $this->checkoutHelper->getSuccessPage($this->module->currentOrder);
+        } catch (ApiException $e) {
+            if ($shouldCreateOrderOnDecline && Validate::isLoadedObject($currentOrder)) {
+                $this->markOrderAsDeclined($currentOrder);
+                $this->saveDeclinedTransactionHistory($currentOrder, '', $e->getMessage());
+                $this->checkoutHelper->restoreCart((int) $currentOrder->id);
+            }
+
+            $this->checkoutHelper->postResponse(
+                true,
+                '',
+                $e->getMessage() ?: 'Payment was declined. Please try again.'
+            );
         } catch (GatewayException $e) {
+            if ($shouldCreateOrderOnDecline && Validate::isLoadedObject($currentOrder)) {
+                $this->markOrderAsDeclined($currentOrder);
+                $this->saveDeclinedTransactionHistory($currentOrder, '', $e->getMessage());
+                $this->checkoutHelper->restoreCart((int) $currentOrder->id);
+            }
+
             $errorMsg = $this->utils->mapResponseCodeToFriendlyMessage($e->responseCode ?? '');
             $this->checkoutHelper->postResponse(
                 true,
@@ -240,10 +294,116 @@ class GlobalPaymentsValidationModuleFrontController extends ModuleFrontControlle
                 $errorMsg ?: $e->getMessage()
             );
         } catch (Exception $e) {
+            if ($shouldCreateOrderOnDecline && Validate::isLoadedObject($currentOrder)) {
+                $this->markOrderAsDeclined($currentOrder);
+                $this->saveDeclinedTransactionHistory($currentOrder, '', $e->getMessage());
+                $this->checkoutHelper->restoreCart((int) $currentOrder->id);
+            }
+
             $this->checkoutHelper->postResponse(
                 true,
                 '',
                 $e->getMessage() ?: 'An error occurred while processing the payment.'
+            );
+        }
+    }
+
+    /**
+    * Create pending order before gateway auth.
+     *
+     * @param \Cart $cart
+     * @param \Customer $customer
+     * @param \Currency $currency
+     * @param object $paymentMethod
+     * @param float $total
+     * @return \Order
+     * @throws \Exception
+     */
+    private function createPendingOrderBeforePayment(
+        \Cart $cart,
+        \Customer $customer,
+        \Currency $currency,
+        object $paymentMethod,
+        float $total
+    ): \Order {
+        $currentOrder = \Order::getByCartId((int) $cart->id);
+        if (Validate::isLoadedObject($currentOrder)) {
+            return $currentOrder;
+        }
+
+        $waitingState = (int) \Configuration::get('GLOBALPAYMENTS_PAYMENT_WAITING');
+
+        $this->module->validateOrder(
+            (int) $cart->id,
+            $waitingState,
+            $total,
+            $paymentMethod->title,
+            '',
+            [],
+            (int) $currency->id,
+            false,
+            $customer->secure_key
+        );
+
+        $currentOrder = \Order::getByCartId((int) $cart->id);
+        if (!Validate::isLoadedObject($currentOrder)) {
+            throw new \RuntimeException('Failed to create pending order before payment.');
+        }
+
+        return $currentOrder;
+    }
+
+    /**
+     * Mark order as declined.
+     *
+     * @param \Order $order
+     * @return void
+     */
+    private function markOrderAsDeclined(\Order $order): void
+    {
+        $declinedState = (int) \Configuration::get('GLOBALPAYMENTS_PAYMENT_DECLINED');
+        if ((int) $order->getCurrentState() === $declinedState) {
+            return;
+        }
+
+        $order->setCurrentState($declinedState);
+        $order->save();
+    }
+
+    /**
+     * Save declined payment record in transaction history.
+     *
+     * @param \Order $order
+     * @param string $transactionId
+     * @param string $resultMessage
+     * @return void
+     */
+    private function saveDeclinedTransactionHistory(
+        \Order $order,
+        string $transactionId = '',
+        string $resultMessage = ''
+    ): void {
+        try {
+            $currency = new \Currency((int) $order->id_currency);
+            $amount = (float) $order->total_paid;
+            $transactionHistory = new TransactionHistory();
+
+            $transactionHistory->saveResult(
+                (int) $order->id,
+                'decline/cancel',
+                $amount,
+                (string) $currency->iso_code,
+                $transactionId,
+                0,
+                $resultMessage !== '' ? $resultMessage : 'Payment declined'
+            );
+        } catch (\Exception $e) {
+            \PrestaShopLogger::addLog(
+                'Failed to save declined transaction history: ' . $e->getMessage(),
+                \PrestaShopLogger::LOG_SEVERITY_LEVEL_WARNING,
+                null,
+                'GlobalPayments',
+                (int) $order->id
             );
         }
     }

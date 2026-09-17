@@ -109,6 +109,26 @@ class HppResponseParser
     }
 
     /**
+     * Extract provider/sub-method from HPP callback data.
+     *
+     * @param array $data
+     * @return string|null
+     */
+    public static function extractPaymentProvider(array $data): ?string
+    {
+        $provider = $data['payment_method']['apm']['provider']
+            ?? $data['payment_method']['digital_wallet']['provider']
+            ?? $data['payment_method']['provider']
+            ?? null;
+
+        if (!is_string($provider) || $provider === '') {
+            return null;
+        }
+
+        return str_replace(['-', ' '], '_', strtoupper($provider));
+    }
+
+    /**
      * Extract payment method result code from HPP callback data
      *
      * @param array $data

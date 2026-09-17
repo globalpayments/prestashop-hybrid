@@ -3,7 +3,11 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.4.0 (08/27/26)
+## Latest Version ## v2.5.0 (09/17/26)
+- Added Support for Click to Pay APM
+- Added support for creating orders for declined, failed payment attempts.
+
+## v2.4.0 (08/27/26)
 - Added Support for Genius gateway
 - Updated GPAPI JS to function better with one-page checkouts
 

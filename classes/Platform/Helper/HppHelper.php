@@ -22,6 +22,7 @@ use GlobalPayments\PaymentGatewayProvider\PaymentMethods\AbstractPaymentMethod;
 use GlobalPayments\PaymentGatewayProvider\PaymentMethods\HostedPaymentPages\Hpp;
 use GlobalPayments\PaymentGatewayProvider\Platform\OrderAdditionalInfo;
 use GlobalPayments\PaymentGatewayProvider\Platform\TransactionHistory;
+use GlobalPayments\PaymentGatewayProvider\Platform\Utils\HppResponseParser;
 use GlobalPayments\PaymentGatewayProvider\Requests\TransactionType;
 
 if (!defined('_PS_VERSION_')) {
@@ -137,9 +138,14 @@ class HppHelper
 
         $targetPayment->transaction_id = $transactionId;
 
-        // Update payment method if card data available
-        if (isset($gatewayData['payment_method']['card'])) {
-            $targetPayment->payment_method = $this->formatPaymentMethod($gatewayData['payment_method']['card']);
+        $paymentLabel = $this->resolvePaymentLabel($gatewayData);
+        if ($paymentLabel !== null) {
+            $targetPayment->payment_method = $paymentLabel;
+
+            if (!isset($gatewayData['payment_method']['card']) && $order->payment !== $paymentLabel) {
+                $order->payment = $paymentLabel;
+                $order->save();
+            }
         }
 
         $targetPayment->save();
@@ -295,6 +301,39 @@ class HppHelper
         $last4 = $cardData['masked_number_last4'] ?? 'XXXX';
 
         return sprintf('Hosted Payment Page - %s ending in %s', $brand, $last4);
+    }
+
+    /**
+     * Resolve a display label for the HPP sub-method used in the callback.
+     *
+     * @param array<string, mixed> $gatewayData Gateway response data
+     * @return string|null Display label or null when the callback does not expose one
+     */
+    private function resolvePaymentLabel(array $gatewayData): ?string
+    {
+        if (isset($gatewayData['payment_method']['card'])) {
+            return $this->formatPaymentMethod($gatewayData['payment_method']['card']);
+        }
+
+        $provider = HppResponseParser::extractPaymentProvider($gatewayData);
+
+        if ($provider === null) {
+            return null;
+        }
+
+        switch ($provider) {
+            case 'CLICK_TO_PAY':
+                return 'Click To Pay';
+            case 'OPEN_BANKING':
+            case 'BANK_PAYMENT':
+                return 'Open Banking Payment';
+            case 'BLIK':
+                return 'Blik Payment';
+            case 'PAYU':
+                return 'PayU Payment';
+            default:
+                return ucwords(strtolower(str_replace('_', ' ', $provider))) . ' Payment';
+        }
     }
 
     /**

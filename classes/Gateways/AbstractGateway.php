@@ -415,8 +415,7 @@ abstract class AbstractGateway implements GatewayInterface
                 'title' => $this->translator->trans('Payment Action', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'select',
                 'description' => $this->translator->trans(
-                    'Choose whether you wish to capture funds immediately or authorize payment only for a
-                     delayed capture.',
+                    'Choose whether you wish to capture funds immediately or authorize payment only for a delayed capture.',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -442,10 +441,7 @@ abstract class AbstractGateway implements GatewayInterface
                 ),
                 'type' => 'switch',
                 'description' => $this->translator->trans(
-                    'Note: to use the card saving feature, you must have multi-use token
-                    support enabled on your account. Please contact
-                    <a href="mailto:%s%?Subject=PrestaShop%%20Allow%%20Card%%20Saving">support</a>
-                    with any questions regarding this option.',
+                    'Note: to use the card saving feature, you must have multi-use token support enabled on your account. Please contact <a href="mailto:%s%?Subject=PrestaShop%%20Allow%%20Card%%20Saving">support</a> with any questions regarding this option.',
                     ['%s%' => $this->getFirstLineSupportEmail()],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -460,10 +456,7 @@ abstract class AbstractGateway implements GatewayInterface
                 'type' => 'text',
                 'maxLength' => '25',
                 'description' => $this->translator->trans(
-                    'During a Capture or Authorize payment action, this value will be passed along as the
-                        transaction-specific descriptor listed on the customer\'s bank account. Please contact
-                        <a href="mailto:%s?Subject=PrestaShop%%20Transaction%%20Descriptor%%20Option">
-                    support</a> with any questions regarding this option (maxLength: 25).',
+                    'During a Capture or Authorize payment action, this value will be passed along as the transaction-specific descriptor listed on the customer\'s bank account. Please contact <a href="mailto:%s?Subject=PrestaShop%%20Transaction%%20Descriptor%%20Option">support</a> with any questions regarding this option (maxLength: 25).',
                     ['%s%' => $this->getFirstLineSupportEmail()],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -550,6 +543,7 @@ abstract class AbstractGateway implements GatewayInterface
                 'description' => $this->translator->trans(
                     'Enable or disable Blik payment method.',
                     [],
+                    'Modules.Globalpayments.Admin'
                 ),
                 'default' => 0,
             ];
@@ -560,6 +554,7 @@ abstract class AbstractGateway implements GatewayInterface
                 'description' => $this->translator->trans(
                     'Enable or disable Open Banking method.',
                     [],
+                    'Modules.Globalpayments.Admin'
                 ),
                 'default' => 0,
             ];
@@ -908,11 +903,7 @@ abstract class AbstractGateway implements GatewayInterface
      */
     protected function securePaymentFieldsAssetBaseUrl()
     {
-        if ($this->isProduction) {
-            return 'https://js.globalpay.com/' . Utils::getJsLibVersion();
-        }
-
-        return 'https://js-cert.globalpay.com/' . Utils::getJsLibVersion();
+        return 'https://js.globalpay.com/' . Utils::getJsLibVersion();
     }
 
     /**

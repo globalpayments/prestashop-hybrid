@@ -175,6 +175,15 @@ class SdkClient implements ClientInterface
         }
         $response = $builder->execute();
 
+        // Preserve the 3DS result on the transaction response so AVS/CVV validation can
+        // inspect the actual liabilityShift payload returned by Secure3dService.
+        if ($response instanceof Transaction
+            && isset($this->cardData, $this->cardData->threeDSecure)
+            && !empty($this->cardData->threeDSecure)
+        ) {
+            $response->threeDSecure = $this->cardData->threeDSecure;
+        }
+
         // For Genius: if we did a BoardCard, set the VaultToken on the response
         // so PaymentTokenHandler can save it (Sale response doesn't include VaultToken)
         if ($this->geniusVaultToken !== null && $response instanceof Transaction) {

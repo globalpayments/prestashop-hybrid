@@ -143,7 +143,8 @@ class VerificationService
             }
         }
 
-        // Store raw response data
+        // Store raw response data before any 3DS bypass logic so debug logging and diagnostics
+        // still capture the gateway-supplied AVS/CVV values.
         $result->setRawAvsData([
             'postalCode' => $avsPostalCode,
             'address' => $avsAddress,
@@ -161,6 +162,16 @@ class VerificationService
 
         $result->setAvsResponseCode($normalizedAvsCode);
         $result->setCvvResponseCode($normalizedCvvCode);
+
+        // If 3DS was successfully completed and secured liability shift, do not reject the
+        // transaction based on AVS/CVV mismatch. The liability shift already protects the merchant.
+        if ($this->hasThreeDSecureLiabilityShift($transaction)) {
+            $result->setAvsValid(true);
+            $result->setCvvValid(true);
+            $result->setShouldDecline(false);
+            $result->setDeclineReasons([]);
+            return $result;
+        }
 
         // If checking is disabled, mark everything as valid
         if (!$this->checkAvsResult) {
@@ -224,6 +235,21 @@ class VerificationService
      * @param string $code The AVS response code
      * @return bool True if code should trigger a decline
      */
+    private function hasThreeDSecureLiabilityShift(Transaction $transaction): bool
+    {
+        $liabilityShift = $transaction->liabilityShift ?? null;
+
+        if (null === $liabilityShift && isset($transaction->threeDSecure) && is_object($transaction->threeDSecure)) {
+            $liabilityShift = $transaction->threeDSecure->liabilityShift ?? null;
+        }
+
+        if (null === $liabilityShift || !is_scalar($liabilityShift)) {
+            return false;
+        }
+
+        return strtoupper((string) $liabilityShift) === 'YES';
+    }
+
     public function isAvsCodeInDeclineList(string $code): bool
     {
         return in_array(strtoupper($code), $this->avsDeclineCodes, true);

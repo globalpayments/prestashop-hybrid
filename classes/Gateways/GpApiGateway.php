@@ -324,12 +324,7 @@ class GpApiGateway extends AbstractGateway
                 'title' => $this->translator->trans('Live Mode', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'switch',
                 'description' => $this->translator->trans(
-                    'Get your App Id and App Key from your <a href="https://developer.globalpay.com/user/register"
-                    target="_blank">Global Payments Developer Account</a>.
-                    Please follow the instructions provided in the readme.txt file.
-                    When you are ready for Live, please contact
-                    <a href="mailto:%s%?Subject=PrestaShop%%20Live%%20Credentials">support</a>
-                    to get your live credentials.',
+                    'Get your App Id and App Key from your <a href="https://developer.globalpay.com/user/register" target="_blank">Global Payments Developer Account</a>. Please follow the instructions provided in the readme.txt file. When you are ready for Live, please contact <a href="mailto:%s%?Subject=PrestaShop%%20Live%%20Credentials">support</a> to get your live credentials.',
                     ['%s%' => $this->getFirstLineSupportEmail()],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -369,21 +364,15 @@ class GpApiGateway extends AbstractGateway
                 'title' => $this->translator->trans('Sandbox Account Name', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'select',
                 'class' => 'required sandbox-toggle',
-                'default' => 'Select Account',
+                'default' => $this->translator->trans('Select Account', [], 'Modules.Globalpayments.Admin'),
                 'description' => $this->translator->trans(
-                    'Select which account to use when processing a transaction. Default account will be used if this is not specified.',
+                    'Select which account to use when processing a transaction. Default account will be used if this is not specified.<br>For assistance locating your account name, please contact our <a href="https://developer.globalpay.com/support/integration-support" target="_blank">Integration Support</a> Team based on location.',
                     [],
                     'Modules.Globalpayments.Admin'
-                ) . '<br>' . $this->translator->trans(
-                    'For assistance locating your account name, please contact our',
-                    [],
-                    'Modules.Globalpayments.Admin'
-                ) . ' <a href="https://developer.globalpay.com/support/integration-support" target="_blank">' .
-                $this->translator->trans('Integration Support', [], 'Modules.Globalpayments.Admin') .
-                '</a> ' . $this->translator->trans('Team based on location.', [], 'Modules.Globalpayments.Admin'),
+                ),
                 'skipConfigSave' => true,
                 'options' => [
-                    'select_account' => 'Select Account',
+                    'select_account' => $this->translator->trans('Select Account', [], 'Modules.Globalpayments.Admin'),
                 ],
             ],
             $this->id . '_appId' => [
@@ -408,21 +397,15 @@ class GpApiGateway extends AbstractGateway
                 'title' => $this->translator->trans('Account Name', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'select',
                 'class' => 'required live-toggle',
-                'default' => 'Select Account',
+                'default' => $this->translator->trans('Select Account', [], 'Modules.Globalpayments.Admin'),
                 'description' => $this->translator->trans(
-                    'Select which account to use when processing a transaction. Default account will be used if this is not specified.',
+                    'Select which account to use when processing a transaction. Default account will be used if this is not specified.<br>For assistance locating your account name, please contact our <a href="https://developer.globalpay.com/support/integration-support" target="_blank">Integration Support</a> Team based on location.',
                     [],
                     'Modules.Globalpayments.Admin'
-                ) . '<br>' . $this->translator->trans(
-                    'For assistance locating your account name, please contact our',
-                    [],
-                    'Modules.Globalpayments.Admin'
-                ) . ' <a href="https://developer.globalpay.com/support/integration-support" target="_blank">' .
-                $this->translator->trans('Integration Support', [], 'Modules.Globalpayments.Admin') .
-                '</a> ' . $this->translator->trans('Team based on location.', [], 'Modules.Globalpayments.Admin'),
+                ),
                 'skipConfigSave' => true,
                 'options' => [
-                    'select_account' => 'Select Account',
+                    'select_account' => $this->translator->trans('Select Account', [], 'Modules.Globalpayments.Admin'),
                 ],
             ],
             $this->id . '_credentialsCheck' => [
@@ -439,8 +422,7 @@ class GpApiGateway extends AbstractGateway
                 'title' => $this->translator->trans('Enable Logging', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'switch',
                 'description' => $this->translator->trans(
-                    'Log all request to and from gateway. This can also log private data and should only be enabled
-                     in a development or stage environment.',
+                    'Log all requests to and from gateway. This can also log private data and should only be enabled in a development or stage environment. Logs are saved to var/logs/ directory.',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -1052,7 +1034,7 @@ class GpApiGateway extends AbstractGateway
     private function fetchInstallmentsFundingModes(): array {
         $refl = new \ReflectionClass('GlobalPayments\Api\Entities\Enums\InstallmentsFundingMode');
 
-        $options = ['select' => 'Please Select'];
+        $options = ['select' => $this->translator->trans('Please Select', [], 'Modules.Globalpayments.Admin')];
 
         foreach ($refl->getConstants() as $mode) {
             $options[$mode] = ucfirst(strtolower(str_replace('_', ' ', $mode)));

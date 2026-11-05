@@ -14,8 +14,9 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const currentEndpointLabel = "{l s='Current Endpoint:' mod='globalpayments' js=1}";
-    const eratyTooltipMessage = "{l s='This payment method must be enabled at the merchant account level.' mod='globalpayments' js=1}";
+    const currentEndpointLabel = "{l s='Current Endpoint:' d='Modules.Globalpayments.Admin' js=1}";
+    const eratyTooltipMessage = "{l s='This payment method must be enabled at the merchant account level.' d='Modules.Globalpayments.Admin' js=1}";
+    const paymentDataLocationTooltipMessage = "{l s='Choose where your payment data will be processed and hosted. This may affect compliance and performance.' d='Modules.Globalpayments.Admin' js=1}";
 
     // Transaction endpoints from server-side data
     const transactionEndpoints = {
@@ -105,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
-        const tooltipMessage = 'Choose where your payment data will be processed and hosted. This may affect compliance and performance.';
+        const tooltipMessage = paymentDataLocationTooltipMessage;
 
         const tooltipWrapper = document.createElement('span');
         tooltipWrapper.className = 'gp-region-tooltip-wrapper';

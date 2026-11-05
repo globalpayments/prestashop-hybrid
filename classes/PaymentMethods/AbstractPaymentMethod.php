@@ -168,8 +168,7 @@ abstract class AbstractPaymentMethod implements PaymentMethodInterface
                     'title' => $this->translator->trans('Payment Action', [], 'Modules.Globalpayments.Admin'),
                     'type' => 'select',
                     'description' => $this->translator->trans(
-                        'Choose whether you wish to capture funds immediately or authorize payment only for a
-                         delayed capture.',
+                        'Choose whether you wish to capture funds immediately or authorize payment only for a delayed capture.',
                         [],
                         'Modules.Globalpayments.Admin'
                     ),

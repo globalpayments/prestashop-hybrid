@@ -245,12 +245,7 @@ class TransitGateway extends AbstractGateway
                 'title' => $this->translator->trans('Live Mode', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'switch',
                 'description' => $this->translator->trans(
-                    'Get your App Id and App Key from your <a href="https://developer.globalpay.com/user/register"
-                    target="_blank">Global Payments Developer Account</a>.
-                    Please follow the instructions provided in the readme.txt file.
-                    When you are ready for Live, please contact
-                    <a href="mailto:%s%?Subject=PrestaShop%%20Live%%20Credentials">support</a>
-                    to get your live credentials.',
+                    'Get your App Id and App Key from your <a href="https://developer.globalpay.com/user/register" target="_blank">Global Payments Developer Account</a>. Please follow the instructions provided in the readme.txt file. When you are ready for Live, please contact <a href="mailto:%s%?Subject=PrestaShop%%20Live%%20Credentials">support</a> to get your live credentials.',
                     ['%s%' => $this->getFirstLineSupportEmail()],
                     'Modules.Globalpayments.Admin'
                 ),

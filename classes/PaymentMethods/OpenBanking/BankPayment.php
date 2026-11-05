@@ -197,8 +197,7 @@ class BankPayment extends AbstractAsyncPaymentMethod
                 'title' => $this->translator->trans('Account Number', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'text',
                 'description' => $this->translator->trans(
-                    'Account number, for bank transfers within the UK (UK to UK bank).
-                    Only required if no bank details are stored on account.',
+                    'Account number, for bank transfers within the UK (UK to UK bank). Only required if no bank details are stored on account.',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -208,8 +207,7 @@ class BankPayment extends AbstractAsyncPaymentMethod
                 'title' => $this->translator->trans('Account Name', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'text',
                 'description' => $this->translator->trans(
-                    'The name of the individual or business on the bank account.
-                    Only required if no bank details are stored on account.',
+                    'The name of the individual or business on the bank account. Only required if no bank details are stored on account.',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -219,9 +217,7 @@ class BankPayment extends AbstractAsyncPaymentMethod
                 'title' => $this->translator->trans('Sort Code', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'text',
                 'description' => $this->translator->trans(
-                    'Six digits which identify the bank and branch of an account.
-                    Included with the Account Number for UK to UK bank transfers.
-                    Only required if no bank details are stored on account.',
+                    'Six digits which identify the bank and branch of an account. Included with the Account Number for UK to UK bank transfers. Only required if no bank details are stored on account.',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -231,9 +227,7 @@ class BankPayment extends AbstractAsyncPaymentMethod
                 'title' => $this->translator->trans('IBAN', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'text',
                 'description' => $this->translator->trans(
-                    'Key field for bank transfers for Europe-to-Europe transfers.
-                    Only required if no bank details are stored on account. <br/>
-                    Only required for EUR transacting merchants.',
+                    'Key field for bank transfers for Europe-to-Europe transfers. Only required if no bank details are stored on account. <br/> Only required for EUR transacting merchants.',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),
@@ -243,10 +237,7 @@ class BankPayment extends AbstractAsyncPaymentMethod
                 'title' => $this->translator->trans('Countries', [], 'Modules.Globalpayments.Admin'),
                 'type' => 'text',
                 'description' => $this->translator->trans(
-                    'Allows you to input a COUNTRY or string of COUNTRIES to limit what is shown to the customer.
-                    Including a country overrides your default account configuration. <br/>
-                    Format: List of ISO 3166-2 (two characters) codes separated by a | <br/>
-                    Example: FR|GB|IE',
+                    'Allows you to input a COUNTRY or string of COUNTRIES to limit what is shown to the customer. Including a country overrides your default account configuration. <br/> Format: List of ISO 3166-2 (two characters) codes separated by a | <br/> Example: FR|GB|IE',
                     [],
                     'Modules.Globalpayments.Admin'
                 ),

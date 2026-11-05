@@ -3,7 +3,12 @@
 </a>
 
 # Changelog
-## Latest Version ## v2.5.0 (09/17/26)
+## Latest Version ## v2.5.1 (11/05/26)
+- Added translations for German and Czech
+- Added AVS data to transactions
+- Fixed an issue where payment fields failed to load at Sandbox checkout because of a deprecated Global Payments JS library version.
+
+## v2.5.0 (09/17/26)
 - Added Support for Click to Pay APM
 - Added support for creating orders for declined, failed payment attempts.
 

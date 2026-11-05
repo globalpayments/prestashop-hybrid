@@ -2399,7 +2399,6 @@
 	        case "qa":
 	            return "https://js-qa.np-hpp.globalpay.com/v" + majorVersion + "/";
 	        case "sandbox":
-	            return "https://js-cert.globalpay.com/v" + majorVersion + "/";
 	        case "production":
 	            return "https://js.globalpay.com/v" + majorVersion + "/";
 	        default:
@@ -3216,7 +3215,6 @@
 	        case "qa":
 	            return "https://js-qa.np-hpp.globalpay.com/v" + majorVersion + "/";
 	        case "sandbox":
-	            return "https://js-cert.globalpay.com/v" + majorVersion + "/";
 	        case "production":
 	            return "https://js.globalpay.com/v" + majorVersion + "/";
 	        default:
